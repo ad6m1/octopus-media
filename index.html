@@ -263,56 +263,56 @@
     /* === MUSIC PLAYER === */
     .music-player {
       position: fixed;
-      bottom: 20px;
-      left: 20px;
+      top: 12px;
+      left: 12px;
       z-index: 999;
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 16px;
-      background: rgba(10, 14, 39, 0.85);
+      gap: 6px;
+      padding: 6px 10px;
+      background: rgba(10, 14, 39, 0.9);
       backdrop-filter: blur(20px);
       border: 1px solid rgba(0, 245, 255, 0.2);
       border-radius: 50px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
       transition: all 0.3s;
     }
 
     .music-player:hover {
       border-color: rgba(0, 245, 255, 0.4);
-      box-shadow: 0 8px 30px rgba(0, 245, 255, 0.15);
     }
 
     .music-btn {
-      width: 36px; height: 36px;
+      width: 32px; height: 32px;
       border-radius: 50%;
       border: none;
       background: linear-gradient(135deg, var(--primary), var(--secondary));
       color: white;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: all 0.3s;
       flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
-    .music-btn:hover { transform: scale(1.1); box-shadow: 0 0 15px var(--glow); }
+    .music-btn:active { transform: scale(0.9); }
 
     .music-vol {
-      width: 80px;
-      height: 4px;
+      width: 60px;
+      height: 6px;
       -webkit-appearance: none;
       appearance: none;
       background: rgba(255, 255, 255, 0.15);
-      border-radius: 2px;
+      border-radius: 3px;
       outline: none;
       cursor: pointer;
-      transition: all 0.3s;
     }
 
     .music-vol::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 14px; height: 14px;
+      width: 18px; height: 18px;
       border-radius: 50%;
       background: var(--primary);
       box-shadow: 0 0 8px var(--glow);
@@ -320,7 +320,7 @@
     }
 
     .music-vol::-moz-range-thumb {
-      width: 14px; height: 14px;
+      width: 18px; height: 18px;
       border-radius: 50%;
       background: var(--primary);
       box-shadow: 0 0 8px var(--glow);
@@ -328,17 +328,8 @@
       border: none;
     }
 
-    .music-title {
-      font-size: 11px;
-      color: var(--text-muted);
-      max-width: 120px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
     .music-eq {
-      display: flex; align-items: flex-end; gap: 2px; height: 18px;
+      display: flex; align-items: flex-end; gap: 2px; height: 16px;
     }
 
     .music-eq span {
@@ -348,16 +339,87 @@
       animation: eqBounce 0.8s ease-in-out infinite;
     }
 
-    .music-eq span:nth-child(1) { height: 8px; animation-delay: 0s; }
-    .music-eq span:nth-child(2) { height: 14px; animation-delay: 0.15s; }
-    .music-eq span:nth-child(3) { height: 6px; animation-delay: 0.3s; }
-    .music-eq span:nth-child(4) { height: 12px; animation-delay: 0.45s; }
+    .music-eq span:nth-child(1) { height: 6px; animation-delay: 0s; }
+    .music-eq span:nth-child(2) { height: 12px; animation-delay: 0.15s; }
+    .music-eq span:nth-child(3) { height: 5px; animation-delay: 0.3s; }
+    .music-eq span:nth-child(4) { height: 10px; animation-delay: 0.45s; }
 
-    .music-eq.paused span { animation: none; height: 4px; background: var(--text-muted); }
+    .music-eq.paused span { animation: none; height: 3px; background: var(--text-muted); }
 
     @keyframes eqBounce {
-      0%, 100% { height: 4px; }
-      50% { height: 18px; }
+      0%, 100% { height: 3px; }
+      50% { height: 16px; }
+    }
+
+    /* === DANCING OCTOPUS === */
+    .octopus-container {
+      position: fixed;
+      top: 50px;
+      left: 12px;
+      z-index: 998;
+      pointer-events: none;
+      transition: opacity 0.6s, transform 0.6s;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    .octopus-container.dancing {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .octopus-container.leaving {
+      opacity: 0;
+      transform: translateX(-120px) rotate(-20deg);
+      transition: all 1.2s cubic-bezier(0.6, -0.28, 0.74, 0.05);
+    }
+
+    .octopus-body {
+      font-size: 42px;
+      animation: octoDance 0.6s ease-in-out infinite;
+      display: inline-block;
+      filter: drop-shadow(0 0 10px rgba(0, 245, 255, 0.4));
+    }
+
+    .octopus-container:not(.dancing) .octopus-body {
+      animation: none;
+    }
+
+    @keyframes octoDance {
+      0%, 100% { transform: translateY(0) rotate(-5deg) scale(1); }
+      25% { transform: translateY(-8px) rotate(5deg) scale(1.05); }
+      50% { transform: translateY(-2px) rotate(-8deg) scale(0.95); }
+      75% { transform: translateY(-10px) rotate(3deg) scale(1.08); }
+    }
+
+    @media (max-width: 600px) {
+      .music-player {
+        top: auto;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        gap: 8px;
+        padding: 8px 14px;
+      }
+
+      .music-vol { width: 50px; }
+
+      .octopus-container {
+        top: auto;
+        bottom: 65px;
+        left: 50%;
+        transform: translateX(-50%) translateY(30px);
+      }
+
+      .octopus-container.dancing {
+        transform: translateX(-50%) translateY(0);
+      }
+
+      .octopus-container.leaving {
+        transform: translateX(-50%) translateY(80px) rotate(20deg);
+      }
+
+      .octopus-body { font-size: 36px; }
     }
 
     .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; }
@@ -959,6 +1021,11 @@
     </div>
   </div>
 
+  <!-- ========== DANCING OCTOPUS ========== -->
+  <div class="octopus-container" id="octopusContainer">
+    <div class="octopus-body" id="octopusBody">🐙</div>
+  </div>
+
   <!-- ========== MUSIC PLAYER ========== -->
   <div class="music-player" id="musicPlayer" style="display:none;">
     <button class="music-btn" id="musicPlayBtn" onclick="toggleMusic()">
@@ -968,7 +1035,7 @@
       <span></span><span></span><span></span><span></span>
     </div>
     <input type="range" class="music-vol" id="musicVol" min="0" max="100" value="30" oninput="setVolume(this.value)">
-    <button class="music-btn" id="musicMuteBtn" onclick="toggleMute()" style="width:30px;height:30px;font-size:12px;">
+    <button class="music-btn" id="musicMuteBtn" onclick="toggleMute()" style="width:28px;height:28px;font-size:11px;">
       <i class="fas fa-volume-up" id="muteIcon"></i>
     </button>
   </div>
@@ -1746,16 +1813,29 @@
     }
 
     function toggleMusic() {
+      const octo = document.getElementById('octopusContainer');
+
       if (isMusicPlaying) {
         audio.pause();
         isMusicPlaying = false;
         document.getElementById('musicIcon').className = 'fas fa-play';
         document.getElementById('musicEq').classList.add('paused');
+
+        // Octopus gets sad and leaves
+        octo.classList.remove('dancing');
+        octo.classList.add('leaving');
+        setTimeout(() => {
+          octo.classList.remove('leaving');
+        }, 1200);
       } else {
         audio.play().then(() => {
           isMusicPlaying = true;
           document.getElementById('musicIcon').className = 'fas fa-pause';
           document.getElementById('musicEq').classList.remove('paused');
+
+          // Octopus appears and dances!
+          octo.classList.remove('leaving');
+          octo.classList.add('dancing');
         }).catch(e => {
           console.warn('Autoplay blocked:', e);
         });
