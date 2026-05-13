@@ -1862,7 +1862,8 @@
         // Upload file if provided
         if (fileInput.files.length) {
           const file = fileInput.files[0];
-          const fileName = `songs/${Date.now()}_${file.name}`;
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const fileName = `songs/${Date.now()}_${safeName}`;
           const { error: upErr } = await sb.storage
             .from('videos')
             .upload(fileName, file, { cacheControl: '3600', upsert: false });
