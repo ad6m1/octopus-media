@@ -260,6 +260,106 @@
     .btn-whatsapp { background: linear-gradient(135deg, #25d366, #128c7e); margin-top: 15px; color: white; }
     .btn-whatsapp:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(37, 211, 102, 0.4); }
 
+    /* === MUSIC PLAYER === */
+    .music-player {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: rgba(10, 14, 39, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 245, 255, 0.2);
+      border-radius: 50px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      transition: all 0.3s;
+    }
+
+    .music-player:hover {
+      border-color: rgba(0, 245, 255, 0.4);
+      box-shadow: 0 8px 30px rgba(0, 245, 255, 0.15);
+    }
+
+    .music-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+
+    .music-btn:hover { transform: scale(1.1); box-shadow: 0 0 15px var(--glow); }
+
+    .music-vol {
+      width: 80px;
+      height: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .music-vol::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 8px var(--glow);
+      cursor: pointer;
+    }
+
+    .music-vol::-moz-range-thumb {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 8px var(--glow);
+      cursor: pointer;
+      border: none;
+    }
+
+    .music-title {
+      font-size: 11px;
+      color: var(--text-muted);
+      max-width: 120px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .music-eq {
+      display: flex; align-items: flex-end; gap: 2px; height: 18px;
+    }
+
+    .music-eq span {
+      width: 3px;
+      background: var(--primary);
+      border-radius: 1px;
+      animation: eqBounce 0.8s ease-in-out infinite;
+    }
+
+    .music-eq span:nth-child(1) { height: 8px; animation-delay: 0s; }
+    .music-eq span:nth-child(2) { height: 14px; animation-delay: 0.15s; }
+    .music-eq span:nth-child(3) { height: 6px; animation-delay: 0.3s; }
+    .music-eq span:nth-child(4) { height: 12px; animation-delay: 0.45s; }
+
+    .music-eq.paused span { animation: none; height: 4px; background: var(--text-muted); }
+
+    @keyframes eqBounce {
+      0%, 100% { height: 4px; }
+      50% { height: 18px; }
+    }
+
     .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; }
     .btn-danger:hover { transform: translateY(-3px); }
 
@@ -642,6 +742,12 @@
             <span><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</span>
           </button>
 
+          <a href="https://wa.me/15303132399" target="_blank" style="text-decoration: none; display: block;">
+            <button type="button" class="btn btn-whatsapp" style="margin-top:12px;">
+              <span><i class="fab fa-whatsapp"></i> للاشتراك والتجربة تواصل معنا</span>
+            </button>
+          </a>
+
           <div id="loginStatus"></div>
         </form>
       </div>
@@ -663,6 +769,9 @@
           </button>
           <button class="btn" id="navAdmin" onclick="goPage('admin')" style="display:none;">
             <span><i class="fas fa-users-cog"></i> الإدارة</span>
+          </button>
+          <button class="btn" id="navMusic" onclick="goPage('music')" style="display:none;">
+            <span><i class="fas fa-music"></i> الأغاني</span>
           </button>
           <button class="btn btn-danger" onclick="logout()">
             <span><i class="fas fa-sign-out-alt"></i> خروج</span>
@@ -796,6 +905,38 @@
             <div class="status loading">جار التحميل...</div>
           </div>
         </div>
+
+        <!-- ===== MUSIC ADMIN PAGE ===== -->
+        <div id="musicPage" class="hidden">
+          <h2 style="text-align:center; margin-bottom: 25px; font-size: 22px; color: var(--primary);">
+            <i class="fas fa-music"></i> إدارة الأغاني
+          </h2>
+
+          <!-- Add Song Form -->
+          <div style="background: rgba(0,0,0,0.2); border-radius: 20px; padding: 25px; margin-bottom: 25px; border: 1px solid rgba(0, 245, 255, 0.1);">
+            <h3 style="color: var(--primary); margin-bottom: 15px; font-size: 16px;"><i class="fas fa-plus-circle"></i> إضافة أغنية جديدة</h3>
+            <div class="form-group" style="margin-bottom:15px;">
+              <input type="text" id="newSongTitle" placeholder="اسم الأغنية" style="padding: 14px 18px;">
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+              <label style="font-size: 13px;"><i class="fas fa-link"></i> رابط الأغنية (MP3 مباشر)</label>
+              <input type="text" id="newSongUrl" placeholder="https://example.com/song.mp3" style="padding: 14px 18px; direction: ltr; text-align: left;">
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+              <label style="font-size: 13px;"><i class="fas fa-upload"></i> أو ارفع ملف صوتي</label>
+              <input type="file" id="newSongFile" accept="audio/*" style="padding: 14px;">
+            </div>
+            <button class="btn btn-connect" onclick="addSong()" style="margin-bottom:0;">
+              <span><i class="fas fa-plus"></i> إضافة الأغنية</span>
+            </button>
+            <div id="addSongStatus"></div>
+          </div>
+
+          <!-- Songs List -->
+          <div id="songsListContainer">
+            <div class="status loading">جار التحميل...</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -818,6 +959,21 @@
     </div>
   </div>
 
+  <!-- ========== MUSIC PLAYER ========== -->
+  <div class="music-player" id="musicPlayer" style="display:none;">
+    <button class="music-btn" id="musicPlayBtn" onclick="toggleMusic()">
+      <i class="fas fa-play" id="musicIcon"></i>
+    </button>
+    <div class="music-eq paused" id="musicEq">
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <input type="range" class="music-vol" id="musicVol" min="0" max="100" value="30" oninput="setVolume(this.value)">
+    <button class="music-btn" id="musicMuteBtn" onclick="toggleMute()" style="width:30px;height:30px;font-size:12px;">
+      <i class="fas fa-volume-up" id="muteIcon"></i>
+    </button>
+  </div>
+  <audio id="audioPlayer" loop preload="auto"></audio>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
   <script>
     // ========================================
@@ -834,6 +990,7 @@
         const { createClient } = window.supabase;
         sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log('✅ Supabase connected');
+        initMusic();
       } catch (e) {
         console.error('❌ Supabase init error:', e);
       }
@@ -994,8 +1151,10 @@
       // Show admin nav
       if (currentUser.role === 'admin') {
         document.getElementById('navAdmin').style.display = '';
+        document.getElementById('navMusic').style.display = '';
       } else {
         document.getElementById('navAdmin').style.display = 'none';
+        document.getElementById('navMusic').style.display = 'none';
       }
 
       // Connect button - per user
@@ -1041,6 +1200,7 @@
       document.getElementById('publishPage').classList.add('hidden');
       document.getElementById('historyPage').classList.add('hidden');
       document.getElementById('adminPage').classList.add('hidden');
+      document.getElementById('musicPage').classList.add('hidden');
 
       // Reset nav active
       document.querySelectorAll('#mainNav .btn').forEach(b => {
@@ -1062,6 +1222,10 @@
         document.getElementById('adminPage').classList.remove('hidden');
         setActiveNav('navAdmin');
         loadUsers();
+      } else if (page === 'music') {
+        document.getElementById('musicPage').classList.remove('hidden');
+        setActiveNav('navMusic');
+        loadSongs();
       }
     }
 
@@ -1547,6 +1711,219 @@
     // ========================================
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    // ========================================
+    // 🎵 MUSIC SYSTEM
+    // ========================================
+    const audio = document.getElementById('audioPlayer');
+    let isMusicPlaying = false;
+    let isMuted = false;
+    let previousVolume = 0.3;
+
+    // Initialize music on page load
+    async function initMusic() {
+      try {
+        const { data, error } = await sb
+          .from('songs')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (error || !data || !data.length) {
+          document.getElementById('musicPlayer').style.display = 'none';
+          return;
+        }
+
+        const song = data[0];
+        audio.src = song.url;
+        audio.volume = 0.3;
+        document.getElementById('musicPlayer').style.display = 'flex';
+
+      } catch (e) {
+        console.warn('Music init error:', e);
+      }
+    }
+
+    function toggleMusic() {
+      if (isMusicPlaying) {
+        audio.pause();
+        isMusicPlaying = false;
+        document.getElementById('musicIcon').className = 'fas fa-play';
+        document.getElementById('musicEq').classList.add('paused');
+      } else {
+        audio.play().then(() => {
+          isMusicPlaying = true;
+          document.getElementById('musicIcon').className = 'fas fa-pause';
+          document.getElementById('musicEq').classList.remove('paused');
+        }).catch(e => {
+          console.warn('Autoplay blocked:', e);
+        });
+      }
+    }
+
+    function setVolume(val) {
+      const v = val / 100;
+      audio.volume = v;
+      previousVolume = v;
+      if (v === 0) {
+        isMuted = true;
+        document.getElementById('muteIcon').className = 'fas fa-volume-mute';
+      } else {
+        isMuted = false;
+        document.getElementById('muteIcon').className = v < 0.5 ? 'fas fa-volume-down' : 'fas fa-volume-up';
+      }
+    }
+
+    function toggleMute() {
+      if (isMuted) {
+        audio.volume = previousVolume || 0.3;
+        document.getElementById('musicVol').value = audio.volume * 100;
+        isMuted = false;
+        document.getElementById('muteIcon').className = audio.volume < 0.5 ? 'fas fa-volume-down' : 'fas fa-volume-up';
+      } else {
+        previousVolume = audio.volume;
+        audio.volume = 0;
+        document.getElementById('musicVol').value = 0;
+        isMuted = true;
+        document.getElementById('muteIcon').className = 'fas fa-volume-mute';
+      }
+    }
+
+    // ========================================
+    // 🎵 ADMIN - SONGS MANAGEMENT
+    // ========================================
+    async function loadSongs() {
+      const container = document.getElementById('songsListContainer');
+      container.innerHTML = '<div class="status loading">جار التحميل...</div>';
+
+      try {
+        const { data, error } = await sb
+          .from('songs')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || !data.length) {
+          container.innerHTML = '<div class="info-alert"><i class="fas fa-info-circle"></i> لا توجد أغاني</div>';
+          return;
+        }
+
+        let html = '';
+        data.forEach(song => {
+          const isActive = song.is_active;
+          html += `
+            <div class="post-item" style="display:flex; align-items:center; gap:15px;">
+              <div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-music" style="font-size:22px;color:white;"></i>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <h3 style="font-size:16px;color:var(--text);margin-bottom:4px;">${song.title}</h3>
+                <p style="font-size:12px;color:var(--text-muted);direction:ltr;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${song.url}</p>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;${isActive ? 'background:rgba(16,185,129,0.2);color:#10b981;' : 'background:rgba(255,255,255,0.1);color:var(--text-muted);'}">${isActive ? '🔊 مفعّلة' : '🔇 متوقفة'}</span>
+                <button onclick="setActiveSong('${song.id}')" style="padding:6px 12px;border:none;border-radius:8px;font-family:inherit;font-size:12px;cursor:pointer;background:rgba(16,185,129,0.2);color:#10b981;font-weight:600;">تفعيل</button>
+                <button onclick="deleteSong('${song.id}')" style="padding:6px 12px;border:none;border-radius:8px;font-family:inherit;font-size:12px;cursor:pointer;background:rgba(239,68,68,0.2);color:#ef4444;font-weight:600;">حذف</button>
+              </div>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+
+      } catch (e) {
+        container.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+      }
+    }
+
+    async function addSong() {
+      const title = document.getElementById('newSongTitle').value.trim();
+      const urlInput = document.getElementById('newSongUrl').value.trim();
+      const fileInput = document.getElementById('newSongFile');
+      const statusEl = document.getElementById('addSongStatus');
+
+      if (!title) {
+        statusEl.innerHTML = '<div class="status error">❌ أدخل اسم الأغنية</div>';
+        return;
+      }
+
+      if (!urlInput && !fileInput.files.length) {
+        statusEl.innerHTML = '<div class="status error">❌ أدخل رابط الأغنية أو ارفع ملف صوتي</div>';
+        return;
+      }
+
+      statusEl.innerHTML = '<div class="status loading">جار الإضافة...</div>';
+
+      try {
+        let songUrl = urlInput;
+
+        // Upload file if provided
+        if (fileInput.files.length) {
+          const file = fileInput.files[0];
+          const fileName = `songs/${Date.now()}_${file.name}`;
+          const { error: upErr } = await sb.storage
+            .from('videos')
+            .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+          if (upErr) throw new Error('فشل رفع الملف: ' + upErr.message);
+
+          const { data: urlData } = sb.storage.from('videos').getPublicUrl(fileName);
+          songUrl = urlData.publicUrl;
+        }
+
+        // Deactivate all other songs
+        await sb.from('songs').update({ is_active: false }).neq('id', '00000000-0000-0000-0000-000000000000');
+
+        // Insert new song as active
+        const { error } = await sb.from('songs').insert([{
+          title: title,
+          url: songUrl,
+          is_active: true
+        }]);
+
+        if (error) throw error;
+
+        statusEl.innerHTML = '<div class="status success">✅ تم إضافة الأغنية وتفعيلها</div>';
+        document.getElementById('newSongTitle').value = '';
+        document.getElementById('newSongUrl').value = '';
+        fileInput.value = '';
+        loadSongs();
+        initMusic(); // Refresh the player
+
+      } catch (e) {
+        statusEl.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+      }
+    }
+
+    async function setActiveSong(songId) {
+      try {
+        // Deactivate all
+        await sb.from('songs').update({ is_active: false }).neq('id', '00000000-0000-0000-0000-000000000000');
+        // Activate selected
+        const { error } = await sb.from('songs').update({ is_active: true }).eq('id', songId);
+        if (error) throw error;
+        alert('✅ تم تفعيل الأغنية');
+        loadSongs();
+        initMusic();
+      } catch (e) {
+        alert('❌ ' + e.message);
+      }
+    }
+
+    async function deleteSong(songId) {
+      if (!confirm('هل تريد حذف هذه الأغنية؟')) return;
+      try {
+        const { error } = await sb.from('songs').delete().eq('id', songId);
+        if (error) throw error;
+        alert('✅ تم الحذف');
+        loadSongs();
+        initMusic();
+      } catch (e) {
+        alert('❌ ' + e.message);
+      }
+    }
   </script>
 </body>
 </html>
