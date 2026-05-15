@@ -911,17 +911,15 @@
           <div style="text-align:center;margin-bottom:25px;">
             <div style="display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,var(--primary),var(--secondary));margin-bottom:15px;font-size:28px;">🤖</div>
             <h2 style="font-size:22px;color:var(--primary);margin-bottom:8px;">AI Caption Generator</h2>
-            <p style="color:var(--text-muted);font-size:13px;">ارفع الفيديو والذكاء الاصطناعي يحلله ويكتب كل شي</p>
+            <p style="color:var(--text-muted);font-size:13px;">يحلل الفيديو اللي رافعه بصفحة النشر ويكتب كل شي تلقائياً</p>
           </div>
 
-          <div class="form-group">
-            <label><i class="fas fa-video"></i> ارفع الفيديو أو الصورة للتحليل</label>
-            <input type="file" id="aiMediaInput" accept="image/*,video/*">
-          </div>
+          <!-- Video Status -->
+          <div id="aiVideoStatus" style="padding:15px;border-radius:14px;margin-bottom:20px;text-align:center;"></div>
 
           <div class="form-group">
-            <label><i class="fas fa-pen"></i> وصف إضافي (اختياري - لتوجيه الـ AI)</label>
-            <textarea id="aiContentDesc" placeholder="اختياري: أضف تفاصيل إضافية مثل اسم المطعم، الموقع، العرض..." style="min-height:70px;"></textarea>
+            <label><i class="fas fa-pen"></i> وصف إضافي (اختياري)</label>
+            <textarea id="aiContentDesc" placeholder="اختياري: أضف تفاصيل مثل اسم المطعم، الموقع، العرض..." style="min-height:70px;"></textarea>
           </div>
 
           <div class="form-group">
@@ -1095,23 +1093,6 @@
               <span><i class="fas fa-plus"></i> إضافة المشترك</span>
             </button>
             <div id="addUserStatus"></div>
-          </div>
-
-          <!-- AI Settings -->
-          <div style="background: rgba(0,0,0,0.2); border-radius: 20px; padding: 25px; margin-bottom: 25px; border: 1px solid rgba(123,47,247,0.2);">
-            <h3 style="color: var(--secondary); margin-bottom: 15px; font-size: 16px;"><i class="fas fa-robot"></i> إعدادات الذكاء الاصطناعي</h3>
-            <div class="form-group" style="margin-bottom:15px;">
-              <label style="font-size: 13px;"><i class="fas fa-magic"></i> رابط API كابشن (Webhook يستقبل الفيديو ويرجع الوصف)</label>
-              <input type="text" id="aiCaptionEndpoint" placeholder="https://n8n.example.com/webhook/ai-caption" style="padding: 14px 18px; direction: ltr; text-align: left;">
-            </div>
-            <div class="form-group" style="margin-bottom:15px;">
-              <label style="font-size: 13px;"><i class="fas fa-fire"></i> رابط API الترندات (Webhook يرجع الترندات)</label>
-              <input type="text" id="aiTrendEndpoint" placeholder="https://n8n.example.com/webhook/ai-trends" style="padding: 14px 18px; direction: ltr; text-align: left;">
-            </div>
-            <button class="btn" onclick="saveAiSettings()" style="background:linear-gradient(135deg,var(--secondary),var(--accent));color:white;margin-bottom:0;">
-              <span><i class="fas fa-save"></i> حفظ إعدادات AI</span>
-            </button>
-            <div id="aiSettingsStatus"></div>
           </div>
 
           <!-- Users List -->
@@ -1396,7 +1377,6 @@
       }
 
       goPage('publish');
-      loadAiSettings();
     }
 
     // ========================================
@@ -1439,6 +1419,7 @@
       } else if (page === 'caption') {
         document.getElementById('captionPage').classList.remove('hidden');
         setActiveNav('navCaption');
+        checkPublishVideo();
       } else if (page === 'trend') {
         document.getElementById('trendPage').classList.remove('hidden');
         setActiveNav('navTrend');
@@ -2084,40 +2065,32 @@
     // 🤖 AI CAPTION GENERATOR
     // ========================================
     let selectedCaptionStyle = 'iraqi';
-    let aiSettings = { caption_endpoint: '', trend_endpoint: '' };
 
-    async function loadAiSettings() {
-      try {
-        const { data } = await sb.from('settings').select('*').eq('key', 'ai_config').single();
-        if (data && data.value) {
-          aiSettings = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-          const ce = document.getElementById('aiCaptionEndpoint');
-          const te = document.getElementById('aiTrendEndpoint');
-          if (ce) ce.value = aiSettings.caption_endpoint || '';
-          if (te) te.value = aiSettings.trend_endpoint || '';
-        }
-      } catch (e) { console.log('No AI settings yet'); }
-    }
-
-    async function saveAiSettings() {
-      const captionEp = document.getElementById('aiCaptionEndpoint').value.trim();
-      const trendEp = document.getElementById('aiTrendEndpoint').value.trim();
-      const statusEl = document.getElementById('aiSettingsStatus');
-      const config = { caption_endpoint: captionEp, trend_endpoint: trendEp };
-      try {
-        const { error } = await sb.from('settings').upsert({ key: 'ai_config', value: config }, { onConflict: 'key' });
-        if (error) throw error;
-        aiSettings = config;
-        statusEl.innerHTML = '<div class="status success" style="margin-top:10px;">✅ تم حفظ الإعدادات</div>';
-      } catch (e) {
-        statusEl.innerHTML = '<div class="status error" style="margin-top:10px;">❌ ' + e.message + '</div>';
+    function checkPublishVideo() {
+      const statusEl = document.getElementById('aiVideoStatus');
+      const mediaInput = document.getElementById('mediaInput');
+      if (mediaInput && mediaInput.files.length > 0) {
+        const file = mediaInput.files[0];
+        const isVideo = file.type.startsWith('video/');
+        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+        statusEl.innerHTML = `<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:14px;padding:15px;">
+          <i class="fas fa-check-circle" style="color:#10b981;font-size:20px;"></i><br>
+          <strong style="color:#10b981;">تم اكتشاف ${isVideo ? 'فيديو' : 'صورة'}: ${file.name}</strong><br>
+          <small style="color:var(--text-muted);">الحجم: ${sizeMB} MB</small>
+        </div>`;
+      } else {
+        statusEl.innerHTML = `<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:15px;">
+          <i class="fas fa-exclamation-triangle" style="color:#f59e0b;font-size:20px;"></i><br>
+          <strong style="color:#f59e0b;">لم يتم اختيار ملف بعد</strong><br>
+          <small style="color:var(--text-muted);">ارجع لصفحة النشر واختر فيديو أو صورة أولاً</small>
+        </div>`;
       }
     }
 
     function selectStyle(style) {
       selectedCaptionStyle = style;
-      ['iraqi', 'trend', 'formal', 'aggressive'].forEach(s => {
-        const el = document.getElementById('style-' + s);
+      ['iraqi', 'trend', 'formal', 'aggressive'].forEach(function(s) {
+        var el = document.getElementById('style-' + s);
         if (s === style) {
           el.style.borderColor = 'rgba(0, 245, 255, 0.6)';
           el.style.background = 'rgba(0, 245, 255, 0.08)';
@@ -2129,54 +2102,60 @@
     }
 
     async function generateCaption() {
-      const fileInput = document.getElementById('aiMediaInput');
-      const extraDesc = document.getElementById('aiContentDesc').value.trim();
-      const niche = document.getElementById('aiNiche').value;
-      const resultEl = document.getElementById('aiResult');
-      const btn = document.getElementById('generateBtn');
+      var mediaInput = document.getElementById('mediaInput');
+      var extraDesc = document.getElementById('aiContentDesc').value.trim();
+      var niche = document.getElementById('aiNiche').value;
+      var resultEl = document.getElementById('aiResult');
+      var btn = document.getElementById('generateBtn');
 
-      if (!fileInput.files.length) {
-        resultEl.innerHTML = '<div class="status error">❌ ارفع فيديو أو صورة للتحليل</div>';
+      if (!mediaInput || !mediaInput.files.length) {
+        resultEl.innerHTML = '<div class="status error">❌ ارجع لصفحة النشر واختر فيديو أو صورة أولاً</div>';
         return;
       }
-      if (!aiSettings.caption_endpoint) {
-        resultEl.innerHTML = '<div class="status error">❌ لم يتم تحديد رابط API الكابشن. تواصل مع المدير</div>';
+
+      var userWebhook = currentUser.webhook_url;
+      if (!userWebhook) {
+        resultEl.innerHTML = '<div class="status error">❌ لم يتم تحديد رابط الويب هوك لحسابك. تواصل مع المدير</div>';
         return;
       }
 
       btn.innerHTML = '<span><i class="fas fa-spinner fa-spin"></i> جار التحليل...</span>';
       btn.disabled = true;
-      resultEl.innerHTML = '<div class="status loading">🤖 جار رفع وتحليل المحتوى <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
+      resultEl.innerHTML = '<div class="status loading">🤖 جار إرسال وتحليل المحتوى <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
 
       try {
-        const file = fileInput.files[0];
-        const formData = new FormData();
+        var file = mediaInput.files[0];
+        var formData = new FormData();
         formData.append('file', file);
+        formData.append('action', 'generate_caption');
         formData.append('niche', niche);
         formData.append('style', selectedCaptionStyle);
         formData.append('extra_desc', extraDesc);
         formData.append('user_email', currentUser.email);
-        const styleMap = { iraqi: 'عراقي شعبي بلهجة عراقية دارجة', trend: 'ترند فايرل جذاب', formal: 'رسمي واحترافي', aggressive: 'هجومي وتحفيزي' };
-        formData.append('style_desc', styleMap[selectedCaptionStyle]);
+        formData.append('user_id', currentUser.id);
 
-        const response = await fetch(aiSettings.caption_endpoint, { method: 'POST', body: formData });
-        if (!response.ok) throw new Error('فشل الاتصال بـ API: ' + response.status);
+        var styleLabels = { iraqi: 'عراقي شعبي بلهجة عراقية دارجة', trend: 'ترند فايرل جذاب', formal: 'رسمي واحترافي', aggressive: 'هجومي وتحفيزي' };
+        formData.append('style_desc', styleLabels[selectedCaptionStyle]);
 
-        let data = await response.json();
+        var response = await fetch(userWebhook, { method: 'POST', body: formData });
+        if (!response.ok) throw new Error('فشل الاتصال: ' + response.status);
+
+        var data = await response.json();
         if (typeof data === 'string') data = JSON.parse(data);
         if (data.output) data = typeof data.output === 'string' ? JSON.parse(data.output) : data.output;
         if (data.data) data = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
 
-        resultEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:15px;">'
-          + (data.tiktok_caption ? renderAiBlock('🎵 كابشن TikTok', data.tiktok_caption, 'tiktok') : '')
-          + (data.instagram_caption ? renderAiBlock('📸 كابشن Instagram', data.instagram_caption, 'instagram') : '')
-          + (data.hook_3sec ? renderAiBlock('⚡ Hook أول 3 ثواني', data.hook_3sec, 'hook') : '')
-          + (data.cta ? renderAiBlock('📢 Call to Action', data.cta, 'cta') : '')
-          + (data.hashtags ? renderAiBlock('#️⃣ هاشتاكات', data.hashtags, 'hashtags') : '')
-          + (data.shorts_title ? renderAiBlock('🎬 عنوان Shorts', data.shorts_title, 'shorts') : '')
-          + (data.youtube_seo ? renderAiBlock('🔍 YouTube SEO', data.youtube_seo, 'seo') : '')
-          + (data.description ? renderAiBlock('📝 وصف المحتوى', data.description, 'desc') : '')
-          + '</div>';
+        var html = '<div style="display:flex;flex-direction:column;gap:15px;">';
+        if (data.tiktok_caption) html += renderAiBlock('🎵 كابشن TikTok', data.tiktok_caption, 'tiktok');
+        if (data.instagram_caption) html += renderAiBlock('📸 كابشن Instagram', data.instagram_caption, 'instagram');
+        if (data.hook_3sec) html += renderAiBlock('⚡ Hook أول 3 ثواني', data.hook_3sec, 'hook');
+        if (data.cta) html += renderAiBlock('📢 Call to Action', data.cta, 'cta');
+        if (data.hashtags) html += renderAiBlock('#️⃣ هاشتاكات', data.hashtags, 'hashtags');
+        if (data.shorts_title) html += renderAiBlock('🎬 عنوان Shorts', data.shorts_title, 'shorts');
+        if (data.youtube_seo) html += renderAiBlock('🔍 YouTube SEO', data.youtube_seo, 'seo');
+        if (data.description) html += renderAiBlock('📝 وصف المحتوى', data.description, 'desc');
+        html += '</div>';
+        resultEl.innerHTML = html;
       } catch (e) {
         console.error(e);
         resultEl.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
@@ -2196,25 +2175,26 @@
     }
 
     function copyAiText(id) {
-      const text = document.getElementById('ai-' + id).innerText;
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = event.target.closest('button');
+      var text = document.getElementById('ai-' + id).innerText;
+      navigator.clipboard.writeText(text).then(function() {
+        var btn = event.target.closest('button');
         btn.innerHTML = '<i class="fas fa-check"></i> تم!';
-        setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i> نسخ'; }, 1500);
+        setTimeout(function() { btn.innerHTML = '<i class="fas fa-copy"></i> نسخ'; }, 1500);
       });
     }
 
     // ========================================
-    // 🔥 TREND DETECTOR
+    // 🔥 TREND DETECTOR (uses same webhook)
     // ========================================
     async function detectTrends() {
-      const niche = document.getElementById('trendNiche').value;
-      const platform = document.getElementById('trendPlatform').value;
-      const resultEl = document.getElementById('trendResult');
-      const btn = document.getElementById('trendBtn');
+      var niche = document.getElementById('trendNiche').value;
+      var platform = document.getElementById('trendPlatform').value;
+      var resultEl = document.getElementById('trendResult');
+      var btn = document.getElementById('trendBtn');
 
-      if (!aiSettings.trend_endpoint) {
-        resultEl.innerHTML = '<div class="status error">❌ لم يتم تحديد رابط API الترندات. تواصل مع المدير</div>';
+      var userWebhook = currentUser.webhook_url;
+      if (!userWebhook) {
+        resultEl.innerHTML = '<div class="status error">❌ لم يتم تحديد رابط الويب هوك. تواصل مع المدير</div>';
         return;
       }
 
@@ -2223,44 +2203,44 @@
       resultEl.innerHTML = '<div class="status loading">🔥 جار تحليل الترندات <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
 
       try {
-        const response = await fetch(aiSettings.trend_endpoint, {
+        var response = await fetch(userWebhook, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ niche, platform, user_email: currentUser.email })
+          body: JSON.stringify({ action: 'detect_trends', niche: niche, platform: platform, user_email: currentUser.email, user_id: currentUser.id })
         });
         if (!response.ok) throw new Error('فشل الاتصال: ' + response.status);
 
-        let result = await response.json();
+        var result = await response.json();
         if (typeof result === 'string') result = JSON.parse(result);
         if (result.output) result = typeof result.output === 'string' ? JSON.parse(result.output) : result.output;
         if (result.data) result = typeof result.data === 'string' ? JSON.parse(result.data) : result.data;
 
-        let html = '';
+        var html = '';
         if (result.trends && result.trends.length) {
           html += '<div style="margin-bottom:20px;"><h3 style="color:var(--accent);font-size:16px;margin-bottom:12px;"><i class="fas fa-fire"></i> الترندات</h3>';
-          result.trends.forEach(t => {
+          result.trends.forEach(function(t) {
             html += '<div style="background:rgba(255,0,110,0.06);border:1px solid rgba(255,0,110,0.15);border-radius:14px;padding:14px;margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;"><strong>' + t.title + '</strong><span>' + (t.heat||'🔥') + '</span></div><p style="color:var(--text-muted);font-size:13px;margin-top:6px;">' + t.description + '</p></div>';
           });
           html += '</div>';
         }
         if (result.sounds && result.sounds.length) {
           html += '<div style="margin-bottom:20px;"><h3 style="color:var(--primary);font-size:16px;margin-bottom:12px;"><i class="fas fa-music"></i> الأصوات الصاعدة</h3>';
-          result.sounds.forEach(s => {
+          result.sounds.forEach(function(s) {
             html += '<div style="background:rgba(0,245,255,0.06);border:1px solid rgba(0,245,255,0.15);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;"><div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-volume-up" style="color:white;"></i></div><div><strong>' + s.name + '</strong><br><small style="color:var(--text-muted);">' + s.usage + '</small></div></div>';
           });
           html += '</div>';
         }
         if (result.hashtags && result.hashtags.length) {
           html += '<div style="margin-bottom:20px;"><h3 style="color:var(--success);font-size:16px;margin-bottom:12px;"><i class="fas fa-hashtag"></i> هاشتاكات</h3><div style="display:flex;flex-wrap:wrap;gap:8px;">';
-          result.hashtags.forEach(h => {
-            const tag = h.startsWith('#') ? h : '#' + h;
+          result.hashtags.forEach(function(h) {
+            var tag = h.startsWith('#') ? h : '#' + h;
             html += '<span onclick="navigator.clipboard.writeText(\'' + tag + '\')" style="padding:8px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:20px;font-size:13px;color:var(--success);cursor:pointer;font-weight:600;">' + tag + '</span>';
           });
           html += '</div></div>';
         }
         if (result.content_ideas && result.content_ideas.length) {
           html += '<div style="margin-bottom:20px;"><h3 style="color:var(--secondary);font-size:16px;margin-bottom:12px;"><i class="fas fa-lightbulb"></i> أفكار محتوى</h3>';
-          result.content_ideas.forEach((idea, i) => {
+          result.content_ideas.forEach(function(idea, i) {
             html += '<div style="background:rgba(123,47,247,0.06);border:1px solid rgba(123,47,247,0.15);border-radius:14px;padding:14px;margin-bottom:10px;"><div style="display:flex;align-items:flex-start;gap:12px;"><span style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--secondary),var(--accent));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;flex-shrink:0;">' + (i+1) + '</span><div><strong>' + idea.idea + '</strong><br><small style="color:var(--text-muted);">' + (idea.why||'') + '</small></div></div></div>';
           });
           html += '</div>';
