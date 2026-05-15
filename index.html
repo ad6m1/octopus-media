@@ -2016,20 +2016,43 @@
         return;
       }
 
-      btn.innerHTML = '<span style="font-size:18px;">🐙</span> جار التحليل...';
+      btn.innerHTML = '<span style="font-size:18px;">🐙</span> جار الرفع...';
       btn.disabled = true;
       btn.style.opacity = '0.7';
-      statusEl.innerHTML = '<div style="padding:10px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);border-radius:10px;font-size:13px;color:var(--primary);text-align:center;">🐙 الاخطبوط يحلل المحتوى <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
+      statusEl.innerHTML = '<div style="padding:10px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);border-radius:10px;font-size:13px;color:var(--primary);text-align:center;">🐙 جار رفع الملف <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
 
       try {
         var file = mediaInput.files[0];
-        var formData = new FormData();
-        formData.append('file', file);
-        formData.append('action', 'generate_caption');
-        formData.append('user_email', currentUser.email);
-        formData.append('user_id', currentUser.id);
+        var fileType = file.type.startsWith('image/') ? 'image' : 'video';
+        var fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+        var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        var uniqueName = currentUser.id + '_ai_' + Date.now() + '_' + safeName;
 
-        var response = await fetch(userWebhook, { method: 'POST', body: formData });
+        // Step 1: Upload to Supabase Storage
+        var upResult = await sb.storage.from('videos').upload(uniqueName, file, { cacheControl: '3600', upsert: false });
+        if (upResult.error) throw new Error('فشل الرفع: ' + upResult.error.message);
+
+        var urlData = sb.storage.from('videos').getPublicUrl(uniqueName);
+        var fileUrl = urlData.data.publicUrl;
+
+        // Step 2: Send JSON to webhook (same format as publish)
+        btn.innerHTML = '<span style="font-size:18px;">🐙</span> جار التحليل...';
+        statusEl.innerHTML = '<div style="padding:10px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);border-radius:10px;font-size:13px;color:var(--primary);text-align:center;">🐙 الاخطبوط يحلل المحتوى <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
+
+        var response = await fetch(userWebhook, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'generate_caption',
+            file_url: fileUrl,
+            file_name: file.name,
+            file_size: fileSize,
+            file_type: fileType,
+            user_email: currentUser.email,
+            user_id: currentUser.id
+          })
+        });
+
         if (!response.ok) throw new Error('فشل الاتصال: ' + response.status);
 
         var data = await response.json();
@@ -2037,7 +2060,7 @@
         if (data.output) data = typeof data.output === 'string' ? JSON.parse(data.output) : data.output;
         if (data.data) data = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
 
-        // Get the caption text
+        // Get the caption text from any possible field
         var caption = data.instagram_caption || data.caption || data.description || data.tiktok_caption || data.text || '';
         if (typeof data === 'string') caption = data;
 
