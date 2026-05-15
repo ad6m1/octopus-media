@@ -2145,7 +2145,14 @@
         if (data.output) data = typeof data.output === 'string' ? JSON.parse(data.output) : data.output;
         if (data.data) data = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
 
-        var html = '<div style="display:flex;flex-direction:column;gap:15px;">';
+        // Auto-fill the publish caption with instagram caption
+        if (data.instagram_caption) {
+          document.getElementById('captionInput').value = data.instagram_caption;
+          document.getElementById('captionGroup').classList.remove('hidden');
+        }
+
+        var html = '<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:14px;padding:12px;margin-bottom:15px;text-align:center;"><i class="fas fa-check-circle" style="color:#10b981;"></i> <strong style="color:#10b981;">تم كتابة الوصف تلقائياً بصفحة النشر ✅</strong></div>';
+        html += '<div style="display:flex;flex-direction:column;gap:15px;">';
         if (data.tiktok_caption) html += renderAiBlock('🎵 كابشن TikTok', data.tiktok_caption, 'tiktok');
         if (data.instagram_caption) html += renderAiBlock('📸 كابشن Instagram', data.instagram_caption, 'instagram');
         if (data.hook_3sec) html += renderAiBlock('⚡ Hook أول 3 ثواني', data.hook_3sec, 'hook');
@@ -2166,12 +2173,27 @@
 
     function renderAiBlock(title, content, id) {
       return '<div style="background:rgba(0,0,0,0.25);border:1px solid rgba(0,245,255,0.1);border-radius:16px;padding:18px;">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">'
         + '<strong style="font-size:14px;color:var(--primary);">' + title + '</strong>'
-        + '<button onclick="copyAiText(\'' + id + '\')" style="padding:6px 12px;border:none;border-radius:8px;background:rgba(0,245,255,0.15);color:var(--primary);font-family:inherit;font-size:12px;cursor:pointer;font-weight:600;"><i class="fas fa-copy"></i> نسخ</button>'
-        + '</div>'
+        + '<div style="display:flex;gap:6px;">'
+        + '<button onclick="useAsCaption(\'' + id + '\')" style="padding:6px 10px;border:none;border-radius:8px;background:rgba(16,185,129,0.2);color:#10b981;font-family:inherit;font-size:11px;cursor:pointer;font-weight:600;"><i class="fas fa-pen"></i> استخدام</button>'
+        + '<button onclick="copyAiText(\'' + id + '\')" style="padding:6px 10px;border:none;border-radius:8px;background:rgba(0,245,255,0.15);color:var(--primary);font-family:inherit;font-size:11px;cursor:pointer;font-weight:600;"><i class="fas fa-copy"></i> نسخ</button>'
+        + '</div></div>'
         + '<p id="ai-' + id + '" style="color:var(--text);font-size:14px;line-height:1.8;word-break:break-word;">' + content + '</p>'
         + '</div>';
+    }
+
+    function useAsCaption(id) {
+      var text = document.getElementById('ai-' + id).innerText;
+      document.getElementById('captionInput').value = text;
+      document.getElementById('captionGroup').classList.remove('hidden');
+      var btn = event.target.closest('button');
+      btn.innerHTML = '<i class="fas fa-check"></i> تم!';
+      btn.style.background = 'rgba(16,185,129,0.4)';
+      setTimeout(function() {
+        btn.innerHTML = '<i class="fas fa-pen"></i> استخدام';
+        btn.style.background = 'rgba(16,185,129,0.2)';
+      }, 2000);
     }
 
     function copyAiText(id) {
