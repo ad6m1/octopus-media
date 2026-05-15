@@ -826,9 +826,6 @@
           <button class="btn active" id="navPublish" onclick="goPage('publish')">
             <span><i class="fas fa-upload"></i> النشر</span>
           </button>
-          <button class="btn" id="navCaption" onclick="goPage('caption')">
-            <span><i class="fas fa-robot"></i> AI كابشن</span>
-          </button>
           <button class="btn" id="navTrend" onclick="goPage('trend')">
             <span><i class="fas fa-fire"></i> الترندات</span>
           </button>
@@ -889,8 +886,14 @@
           </div>
 
           <div class="form-group hidden" id="captionGroup">
-            <label><i class="fas fa-align-right"></i> الوصف (للريلز فقط)</label>
-            <textarea id="captionInput" placeholder="أدخل وصف المنشور هنا..."></textarea>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <label style="margin:0;"><i class="fas fa-align-right"></i> الوصف (للريلز فقط)</label>
+              <button onclick="aiGenerateDesc()" id="aiDescBtn" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 15px rgba(0,245,255,0.3);" title="توليد الوصف بالذكاء الاصطناعي">
+                <span style="font-size:18px;">🐙</span> AI وصف
+              </button>
+            </div>
+            <textarea id="captionInput" placeholder="أدخل وصف المنشور هنا... أو اضغط 🐙 AI وصف"></textarea>
+            <div id="aiDescStatus" style="margin-top:8px;"></div>
           </div>
 
           <button class="btn btn-primary" onclick="publish()">
@@ -904,69 +907,6 @@
               <span><i class="fab fa-whatsapp"></i> للتواصل مع فريق الدعم</span>
             </button>
           </a>
-        </div>
-
-        <!-- ===== AI CAPTION PAGE ===== -->
-        <div id="captionPage" class="hidden">
-          <div style="text-align:center;margin-bottom:25px;">
-            <div style="display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,var(--primary),var(--secondary));margin-bottom:15px;font-size:28px;">🤖</div>
-            <h2 style="font-size:22px;color:var(--primary);margin-bottom:8px;">AI Caption Generator</h2>
-            <p style="color:var(--text-muted);font-size:13px;">يحلل الفيديو اللي رافعه بصفحة النشر ويكتب كل شي تلقائياً</p>
-          </div>
-
-          <!-- Video Status -->
-          <div id="aiVideoStatus" style="padding:15px;border-radius:14px;margin-bottom:20px;text-align:center;"></div>
-
-          <div class="form-group">
-            <label><i class="fas fa-pen"></i> وصف إضافي (اختياري)</label>
-            <textarea id="aiContentDesc" placeholder="اختياري: أضف تفاصيل مثل اسم المطعم، الموقع، العرض..." style="min-height:70px;"></textarea>
-          </div>
-
-          <div class="form-group">
-            <label><i class="fas fa-bullseye"></i> المجال (Niche)</label>
-            <select id="aiNiche">
-              <option value="عام">عام</option>
-              <option value="مطاعم وأكل">مطاعم وأكل</option>
-              <option value="أزياء وموضة">أزياء وموضة</option>
-              <option value="تقنية">تقنية</option>
-              <option value="سيارات">سيارات</option>
-              <option value="عقارات">عقارات</option>
-              <option value="رياضة">رياضة</option>
-              <option value="سفر وسياحة">سفر وسياحة</option>
-              <option value="تعليم">تعليم</option>
-              <option value="صحة وجمال">صحة وجمال</option>
-              <option value="ترفيه وكوميديا">ترفيه وكوميديا</option>
-              <option value="بزنس وتسويق">بزنس وتسويق</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label><i class="fas fa-palette"></i> ستايل الكتابة</label>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-              <label class="style-option" onclick="selectStyle('iraqi')" id="style-iraqi" style="display:flex;align-items:center;gap:10px;padding:14px;border:2px solid rgba(0,245,255,0.3);border-radius:14px;cursor:pointer;transition:all 0.3s;background:rgba(0,245,255,0.08);">
-                <span style="font-size:22px;">🇮🇶</span>
-                <div><strong style="font-size:14px;">ستايل عراقي</strong><br><small style="color:var(--text-muted);">لهجة عراقية حميمة</small></div>
-              </label>
-              <label class="style-option" onclick="selectStyle('trend')" id="style-trend" style="display:flex;align-items:center;gap:10px;padding:14px;border:2px solid rgba(255,255,255,0.1);border-radius:14px;cursor:pointer;transition:all 0.3s;">
-                <span style="font-size:22px;">🔥</span>
-                <div><strong style="font-size:14px;">ستايل ترند</strong><br><small style="color:var(--text-muted);">فايرل وجذّاب</small></div>
-              </label>
-              <label class="style-option" onclick="selectStyle('formal')" id="style-formal" style="display:flex;align-items:center;gap:10px;padding:14px;border:2px solid rgba(255,255,255,0.1);border-radius:14px;cursor:pointer;transition:all 0.3s;">
-                <span style="font-size:22px;">👔</span>
-                <div><strong style="font-size:14px;">ستايل رسمي</strong><br><small style="color:var(--text-muted);">احترافي ومهني</small></div>
-              </label>
-              <label class="style-option" onclick="selectStyle('aggressive')" id="style-aggressive" style="display:flex;align-items:center;gap:10px;padding:14px;border:2px solid rgba(255,255,255,0.1);border-radius:14px;cursor:pointer;transition:all 0.3s;">
-                <span style="font-size:22px;">⚡</span>
-                <div><strong style="font-size:14px;">ستايل هجومي</strong><br><small style="color:var(--text-muted);">تحفيزي وقوي</small></div>
-              </label>
-            </div>
-          </div>
-
-          <button class="btn btn-primary" onclick="generateCaption()" id="generateBtn">
-            <span><i class="fas fa-magic"></i> تحليل وتوليد المحتوى</span>
-          </button>
-
-          <div id="aiResult" style="margin-top:20px;"></div>
         </div>
 
         <!-- ===== TREND DETECTOR PAGE ===== -->
@@ -1398,7 +1338,6 @@
     function goPage(page) {
       // Hide all
       document.getElementById('publishPage').classList.add('hidden');
-      document.getElementById('captionPage').classList.add('hidden');
       document.getElementById('trendPage').classList.add('hidden');
       document.getElementById('historyPage').classList.add('hidden');
       document.getElementById('adminPage').classList.add('hidden');
@@ -1416,10 +1355,6 @@
       if (page === 'publish') {
         document.getElementById('publishPage').classList.remove('hidden');
         setActiveNav('navPublish');
-      } else if (page === 'caption') {
-        document.getElementById('captionPage').classList.remove('hidden');
-        setActiveNav('navCaption');
-        checkPublishVideo();
       } else if (page === 'trend') {
         document.getElementById('trendPage').classList.remove('hidden');
         setActiveNav('navTrend');
@@ -2062,80 +1997,37 @@
     }
 
     // ========================================
-    // 🤖 AI CAPTION GENERATOR
+    // 🐙 AI DESCRIPTION GENERATOR
     // ========================================
-    let selectedCaptionStyle = 'iraqi';
-
-    function checkPublishVideo() {
-      const statusEl = document.getElementById('aiVideoStatus');
-      const mediaInput = document.getElementById('mediaInput');
-      if (mediaInput && mediaInput.files.length > 0) {
-        const file = mediaInput.files[0];
-        const isVideo = file.type.startsWith('video/');
-        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
-        statusEl.innerHTML = `<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:14px;padding:15px;">
-          <i class="fas fa-check-circle" style="color:#10b981;font-size:20px;"></i><br>
-          <strong style="color:#10b981;">تم اكتشاف ${isVideo ? 'فيديو' : 'صورة'}: ${file.name}</strong><br>
-          <small style="color:var(--text-muted);">الحجم: ${sizeMB} MB</small>
-        </div>`;
-      } else {
-        statusEl.innerHTML = `<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:15px;">
-          <i class="fas fa-exclamation-triangle" style="color:#f59e0b;font-size:20px;"></i><br>
-          <strong style="color:#f59e0b;">لم يتم اختيار ملف بعد</strong><br>
-          <small style="color:var(--text-muted);">ارجع لصفحة النشر واختر فيديو أو صورة أولاً</small>
-        </div>`;
-      }
-    }
-
-    function selectStyle(style) {
-      selectedCaptionStyle = style;
-      ['iraqi', 'trend', 'formal', 'aggressive'].forEach(function(s) {
-        var el = document.getElementById('style-' + s);
-        if (s === style) {
-          el.style.borderColor = 'rgba(0, 245, 255, 0.6)';
-          el.style.background = 'rgba(0, 245, 255, 0.08)';
-        } else {
-          el.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-          el.style.background = 'transparent';
-        }
-      });
-    }
-
-    async function generateCaption() {
+    async function aiGenerateDesc() {
       var mediaInput = document.getElementById('mediaInput');
-      var extraDesc = document.getElementById('aiContentDesc').value.trim();
-      var niche = document.getElementById('aiNiche').value;
-      var resultEl = document.getElementById('aiResult');
-      var btn = document.getElementById('generateBtn');
+      var captionInput = document.getElementById('captionInput');
+      var statusEl = document.getElementById('aiDescStatus');
+      var btn = document.getElementById('aiDescBtn');
 
       if (!mediaInput || !mediaInput.files.length) {
-        resultEl.innerHTML = '<div class="status error">❌ ارجع لصفحة النشر واختر فيديو أو صورة أولاً</div>';
+        statusEl.innerHTML = '<div style="padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;font-size:13px;color:#ef4444;text-align:center;">❌ اختر فيديو أو صورة أولاً</div>';
         return;
       }
 
       var userWebhook = currentUser.webhook_url;
       if (!userWebhook) {
-        resultEl.innerHTML = '<div class="status error">❌ لم يتم تحديد رابط الويب هوك لحسابك. تواصل مع المدير</div>';
+        statusEl.innerHTML = '<div style="padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;font-size:13px;color:#ef4444;text-align:center;">❌ لم يتم تحديد رابط الويب هوك. تواصل مع المدير</div>';
         return;
       }
 
-      btn.innerHTML = '<span><i class="fas fa-spinner fa-spin"></i> جار التحليل...</span>';
+      btn.innerHTML = '<span style="font-size:18px;">🐙</span> جار التحليل...';
       btn.disabled = true;
-      resultEl.innerHTML = '<div class="status loading">🤖 جار إرسال وتحليل المحتوى <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
+      btn.style.opacity = '0.7';
+      statusEl.innerHTML = '<div style="padding:10px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);border-radius:10px;font-size:13px;color:var(--primary);text-align:center;">🐙 الاخطبوط يحلل المحتوى <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
 
       try {
         var file = mediaInput.files[0];
         var formData = new FormData();
         formData.append('file', file);
         formData.append('action', 'generate_caption');
-        formData.append('niche', niche);
-        formData.append('style', selectedCaptionStyle);
-        formData.append('extra_desc', extraDesc);
         formData.append('user_email', currentUser.email);
         formData.append('user_id', currentUser.id);
-
-        var styleLabels = { iraqi: 'عراقي شعبي بلهجة عراقية دارجة', trend: 'ترند فايرل جذاب', formal: 'رسمي واحترافي', aggressive: 'هجومي وتحفيزي' };
-        formData.append('style_desc', styleLabels[selectedCaptionStyle]);
 
         var response = await fetch(userWebhook, { method: 'POST', body: formData });
         if (!response.ok) throw new Error('فشل الاتصال: ' + response.status);
@@ -2145,64 +2037,26 @@
         if (data.output) data = typeof data.output === 'string' ? JSON.parse(data.output) : data.output;
         if (data.data) data = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
 
-        // Auto-fill the publish caption with instagram caption
-        if (data.instagram_caption) {
-          document.getElementById('captionInput').value = data.instagram_caption;
-          document.getElementById('captionGroup').classList.remove('hidden');
+        // Get the caption text
+        var caption = data.instagram_caption || data.caption || data.description || data.tiktok_caption || data.text || '';
+        if (typeof data === 'string') caption = data;
+
+        if (caption) {
+          captionInput.value = caption;
+          statusEl.innerHTML = '<div style="padding:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;font-size:13px;color:#10b981;text-align:center;">🐙✅ تم كتابة الوصف بنجاح!</div>';
+          setTimeout(function() { statusEl.innerHTML = ''; }, 4000);
+        } else {
+          statusEl.innerHTML = '<div style="padding:10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:10px;font-size:13px;color:#f59e0b;text-align:center;">⚠️ لم يتم استلام وصف من الـ AI</div>';
         }
 
-        var html = '<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:14px;padding:12px;margin-bottom:15px;text-align:center;"><i class="fas fa-check-circle" style="color:#10b981;"></i> <strong style="color:#10b981;">تم كتابة الوصف تلقائياً بصفحة النشر ✅</strong></div>';
-        html += '<div style="display:flex;flex-direction:column;gap:15px;">';
-        if (data.tiktok_caption) html += renderAiBlock('🎵 كابشن TikTok', data.tiktok_caption, 'tiktok');
-        if (data.instagram_caption) html += renderAiBlock('📸 كابشن Instagram', data.instagram_caption, 'instagram');
-        if (data.hook_3sec) html += renderAiBlock('⚡ Hook أول 3 ثواني', data.hook_3sec, 'hook');
-        if (data.cta) html += renderAiBlock('📢 Call to Action', data.cta, 'cta');
-        if (data.hashtags) html += renderAiBlock('#️⃣ هاشتاكات', data.hashtags, 'hashtags');
-        if (data.shorts_title) html += renderAiBlock('🎬 عنوان Shorts', data.shorts_title, 'shorts');
-        if (data.youtube_seo) html += renderAiBlock('🔍 YouTube SEO', data.youtube_seo, 'seo');
-        if (data.description) html += renderAiBlock('📝 وصف المحتوى', data.description, 'desc');
-        html += '</div>';
-        resultEl.innerHTML = html;
       } catch (e) {
         console.error(e);
-        resultEl.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+        statusEl.innerHTML = '<div style="padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;font-size:13px;color:#ef4444;text-align:center;">❌ ' + e.message + '</div>';
       }
-      btn.innerHTML = '<span><i class="fas fa-magic"></i> تحليل وتوليد المحتوى</span>';
+
+      btn.innerHTML = '<span style="font-size:18px;">🐙</span> AI وصف';
       btn.disabled = false;
-    }
-
-    function renderAiBlock(title, content, id) {
-      return '<div style="background:rgba(0,0,0,0.25);border:1px solid rgba(0,245,255,0.1);border-radius:16px;padding:18px;">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">'
-        + '<strong style="font-size:14px;color:var(--primary);">' + title + '</strong>'
-        + '<div style="display:flex;gap:6px;">'
-        + '<button onclick="useAsCaption(\'' + id + '\')" style="padding:6px 10px;border:none;border-radius:8px;background:rgba(16,185,129,0.2);color:#10b981;font-family:inherit;font-size:11px;cursor:pointer;font-weight:600;"><i class="fas fa-pen"></i> استخدام</button>'
-        + '<button onclick="copyAiText(\'' + id + '\')" style="padding:6px 10px;border:none;border-radius:8px;background:rgba(0,245,255,0.15);color:var(--primary);font-family:inherit;font-size:11px;cursor:pointer;font-weight:600;"><i class="fas fa-copy"></i> نسخ</button>'
-        + '</div></div>'
-        + '<p id="ai-' + id + '" style="color:var(--text);font-size:14px;line-height:1.8;word-break:break-word;">' + content + '</p>'
-        + '</div>';
-    }
-
-    function useAsCaption(id) {
-      var text = document.getElementById('ai-' + id).innerText;
-      document.getElementById('captionInput').value = text;
-      document.getElementById('captionGroup').classList.remove('hidden');
-      var btn = event.target.closest('button');
-      btn.innerHTML = '<i class="fas fa-check"></i> تم!';
-      btn.style.background = 'rgba(16,185,129,0.4)';
-      setTimeout(function() {
-        btn.innerHTML = '<i class="fas fa-pen"></i> استخدام';
-        btn.style.background = 'rgba(16,185,129,0.2)';
-      }, 2000);
-    }
-
-    function copyAiText(id) {
-      var text = document.getElementById('ai-' + id).innerText;
-      navigator.clipboard.writeText(text).then(function() {
-        var btn = event.target.closest('button');
-        btn.innerHTML = '<i class="fas fa-check"></i> تم!';
-        setTimeout(function() { btn.innerHTML = '<i class="fas fa-copy"></i> نسخ'; }, 1500);
-      });
+      btn.style.opacity = '1';
     }
 
     // ========================================
