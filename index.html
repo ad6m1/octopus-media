@@ -1539,108 +1539,95 @@
       var successCount = 0;
       var failCount = 0;
 
-      statusEl.innerHTML = '<div class="status loading">جار رفع ونشر ' + totalFiles + ' ملف <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
+      statusEl.innerHTML = '<div class="status loading">🚀 جار رفع ونشر ' + totalFiles + ' ملف بالتوازي <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
 
-      for (var i = 0; i < selectedFiles.length; i++) {
-        var file = selectedFiles[i];
+      // Show all progress bars
+      for (var p = 0; p < totalFiles; p++) {
+        var pb = document.getElementById('progress-' + p);
+        if (pb) pb.style.display = 'block';
+      }
+
+      // Upload function for single file
+      async function uploadSingleFile(file, index) {
         var fileType = file.type.startsWith('image/') ? 'image' : 'video';
         var fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
         var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        var uniqueName = currentUser.id + '_' + Date.now() + '_' + safeName;
-
-        // Show progress
-        var progressBar = document.getElementById('progress-' + i);
-        var progressFill = document.getElementById('progress-fill-' + i);
-        var fileItem = document.getElementById('file-item-' + i);
-        if (progressBar) progressBar.style.display = 'block';
-        if (progressFill) progressFill.style.width = '30%';
-
-        statusEl.innerHTML = '<div class="status loading">📤 (' + (i + 1) + '/' + totalFiles + ') جار رفع: ' + file.name + ' <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
+        var uniqueName = currentUser.id + '_' + Date.now() + '_' + index + '_' + safeName;
+        var progressFill = document.getElementById('progress-fill-' + index);
+        var fileItem = document.getElementById('file-item-' + index);
 
         try {
+          if (progressFill) progressFill.style.width = '20%';
+
           // Upload to Supabase Storage
           var upResult = await sb.storage.from('videos').upload(uniqueName, file, { cacheControl: '3600', upsert: false });
-          if (upResult.error) throw new Error('فشل الرفع: ' + upResult.error.message);
+          if (upResult.error) throw new Error(upResult.error.message);
 
           var urlData = sb.storage.from('videos').getPublicUrl(uniqueName);
           var fileUrl = urlData.data.publicUrl;
-
-          if (progressFill) progressFill.style.width = '60%';
+          if (progressFill) progressFill.style.width = '50%';
 
           // Send to webhook
           var userWebhook = currentUser.webhook_url || '';
           if (userWebhook) {
-            try {
-              var payload = {
-                file_url: fileUrl,
-                file_name: file.name,
-                file_size: fileSize,
-                file_type: fileType,
-                post_type: postType,
-                caption: caption || '',
-                user_email: currentUser.email,
-                user_id: currentUser.id,
-                scheduled: isScheduled,
-                batch_index: i + 1,
-                batch_total: totalFiles
-              };
-
-              if (isScheduled) {
-                payload.schedule_time = new Date(scheduleTime).toISOString();
-                payload.timezone = 'Asia/Baghdad';
-              }
-
-              await fetch(userWebhook, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-              });
-            } catch (wErr) {
-              console.warn('⚠️ Webhook error:', wErr.message);
+            var payload = {
+              file_url: fileUrl, file_name: file.name, file_size: fileSize,
+              file_type: fileType, post_type: postType, caption: caption || '',
+              user_email: currentUser.email, user_id: currentUser.id,
+              scheduled: isScheduled, batch_index: index + 1, batch_total: totalFiles
+            };
+            if (isScheduled) {
+              payload.schedule_time = new Date(scheduleTime).toISOString();
+              payload.timezone = 'Asia/Baghdad';
             }
+            await fetch(userWebhook, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            }).catch(function() {});
           }
-
           if (progressFill) progressFill.style.width = '80%';
 
           // Save to database
           if (isScheduled) {
             await sb.from('scheduled_posts').insert([{
-              user_id: currentUser.id,
-              user_email: currentUser.email,
-              post_type: postType,
-              caption: caption || '',
-              file_url: fileUrl,
-              file_type: fileType,
+              user_id: currentUser.id, user_email: currentUser.email,
+              post_type: postType, caption: caption || '',
+              file_url: fileUrl, file_type: fileType,
               schedule_time: new Date(scheduleTime).toISOString(),
-              timezone: 'Asia/Baghdad',
-              platforms: ['all'],
-              status: 'pending',
+              timezone: 'Asia/Baghdad', platforms: ['all'], status: 'pending',
               metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName }
             }]);
           } else {
             await sb.from('published_posts').insert([{
-              user_id: currentUser.id,
-              user_email: currentUser.email,
-              post_type: postType,
-              caption: caption || '',
-              file_url: fileUrl,
-              file_type: fileType,
-              platform: 'all',
-              status: 'published',
+              user_id: currentUser.id, user_email: currentUser.email,
+              post_type: postType, caption: caption || '',
+              file_url: fileUrl, file_type: fileType,
+              platform: 'all', status: 'published',
               metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName }
             }]);
           }
 
           if (progressFill) progressFill.style.width = '100%';
           if (fileItem) fileItem.style.borderColor = 'rgba(16, 185, 129, 0.5)';
-          successCount++;
-
+          return true;
         } catch (err) {
-          console.error('Error with file ' + file.name + ':', err);
-          failCount++;
+          console.error('Error: ' + file.name, err);
           if (progressFill) { progressFill.style.width = '100%'; progressFill.style.background = '#ef4444'; }
           if (fileItem) fileItem.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+          return false;
         }
+      }
+
+      // Upload in parallel batches of 5
+      var BATCH_SIZE = 5;
+      for (var b = 0; b < totalFiles; b += BATCH_SIZE) {
+        var batch = [];
+        for (var j = b; j < Math.min(b + BATCH_SIZE, totalFiles); j++) {
+          batch.push(uploadSingleFile(selectedFiles[j], j));
+        }
+        statusEl.innerHTML = '<div class="status loading">🚀 جار الرفع... (' + Math.min(b + BATCH_SIZE, totalFiles) + '/' + totalFiles + ') <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
+        var results = await Promise.all(batch);
+        results.forEach(function(ok) { if (ok) successCount++; else failCount++; });
       }
 
       // Final status
