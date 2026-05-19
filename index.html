@@ -730,6 +730,50 @@
     /* === HIDDEN === */
     .hidden { display: none !important; }
 
+    /* === FILES PREVIEW === */
+    .files-preview-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; margin-bottom: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(0, 245, 255, 0.1);
+      border-radius: 12px;
+      transition: all 0.3s;
+    }
+
+    .files-preview-item:hover { border-color: rgba(0, 245, 255, 0.3); }
+
+    .files-preview-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+
+    .files-preview-info { flex: 1; min-width: 0; }
+    .files-preview-info strong { font-size: 13px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .files-preview-info small { color: var(--text-muted); font-size: 11px; }
+
+    .files-preview-remove {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: none; background: rgba(239, 68, 68, 0.2);
+      color: #ef4444; font-size: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.3s; flex-shrink: 0;
+    }
+
+    .files-preview-remove:hover { background: rgba(239, 68, 68, 0.4); }
+
+    .upload-progress-bar {
+      height: 4px; border-radius: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      margin-top: 6px; overflow: hidden;
+    }
+
+    .upload-progress-fill {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      transition: width 0.3s;
+    }
+
     /* === RESPONSIVE === */
     @media (max-width: 600px) {
       .card, .app-card { padding: 30px 20px; }
@@ -849,8 +893,10 @@
           <div id="connectBtnWrapper"></div>
 
           <div class="form-group">
-            <label><i class="fas fa-file-video"></i> اختر الملف (صورة أو فيديو)</label>
-            <input type="file" id="mediaInput" accept="image/*,video/*" onchange="checkFileSize(this)">
+            <label><i class="fas fa-file-video"></i> اختر الملفات (صور أو فيديوهات - حتى 50 ملف)</label>
+            <input type="file" id="mediaInput" accept="image/*,video/*" multiple onchange="handleFilesSelected(this)">
+
+            <div id="filesListPreview" style="margin-top:12px;"></div>
 
             <div class="warning-note">
               <i class="fas fa-info-circle"></i>
@@ -889,7 +935,7 @@
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
               <label style="margin:0;"><i class="fas fa-align-right"></i> الوصف (للريلز فقط)</label>
               <button onclick="aiGenerateDesc()" id="aiDescBtn" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 15px rgba(0,245,255,0.3);" title="توليد الوصف بالذكاء الاصطناعي">
-                <span style="font-size:18px;">🐙</span> (في وضع التطوير) AI وصف
+                <span style="font-size:18px;">🐙</span> AI وصف
               </button>
             </div>
             <textarea id="captionInput" placeholder="أدخل وصف المنشور هنا... أو اضغط 🐙 AI وصف"></textarea>
@@ -1402,25 +1448,76 @@
       }
     }
 
-    function checkFileSize(input) {
-      if (!input.files.length) return;
-      const mb = input.files[0].size / 1024 / 1024;
-      if (mb > 5000) {
-        alert(`⚠️ حجم الملف كبير! (${mb.toFixed(0)} MB)\nالحد الأقصى: 5 GB`);
-        input.value = '';
+    // Selected files array
+    let selectedFiles = [];
+
+    function handleFilesSelected(input) {
+      const newFiles = Array.from(input.files);
+      const MAX_FILES = 50;
+
+      // Check total count
+      if (selectedFiles.length + newFiles.length > MAX_FILES) {
+        alert('⚠️ الحد الأقصى ' + MAX_FILES + ' ملف. عندك حالياً ' + selectedFiles.length);
+        return;
       }
+
+      // Check each file size
+      for (var f of newFiles) {
+        var mb = f.size / 1024 / 1024;
+        if (mb > 5000) {
+          alert('⚠️ الملف ' + f.name + ' كبير جداً (' + mb.toFixed(0) + ' MB). الحد: 5 GB');
+          continue;
+        }
+        selectedFiles.push(f);
+      }
+
+      renderFilesPreview();
+    }
+
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      renderFilesPreview();
+    }
+
+    function renderFilesPreview() {
+      var container = document.getElementById('filesListPreview');
+      if (!selectedFiles.length) {
+        container.innerHTML = '';
+        return;
+      }
+
+      var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">';
+      html += '<strong style="font-size:14px;color:var(--primary);">' + selectedFiles.length + ' ملف محدد</strong>';
+      html += '<button onclick="selectedFiles=[];renderFilesPreview();" style="padding:6px 12px;border:none;border-radius:8px;background:rgba(239,68,68,0.2);color:#ef4444;font-family:inherit;font-size:12px;cursor:pointer;font-weight:600;">مسح الكل</button>';
+      html += '</div>';
+
+      selectedFiles.forEach(function(file, i) {
+        var isVideo = file.type.startsWith('video/');
+        var sizeMB = (file.size / 1024 / 1024).toFixed(1);
+        var icon = isVideo ? 'fa-video' : 'fa-image';
+        var color = isVideo ? 'linear-gradient(135deg,var(--primary),var(--secondary))' : 'linear-gradient(135deg,#f59e0b,#ef4444)';
+
+        html += '<div class="files-preview-item" id="file-item-' + i + '">';
+        html += '<div class="files-preview-icon" style="background:' + color + ';color:white;"><i class="fas ' + icon + '"></i></div>';
+        html += '<div class="files-preview-info"><strong>' + file.name + '</strong><small>' + sizeMB + ' MB</small>';
+        html += '<div class="upload-progress-bar" id="progress-' + i + '" style="display:none;"><div class="upload-progress-fill" id="progress-fill-' + i + '" style="width:0%"></div></div>';
+        html += '</div>';
+        html += '<button class="files-preview-remove" onclick="removeFile(' + i + ')"><i class="fas fa-times"></i></button>';
+        html += '</div>';
+      });
+
+      container.innerHTML = html;
     }
 
     async function publish() {
-      const mediaInput = document.getElementById('mediaInput');
-      const postType = document.getElementById('postType').value;
-      const caption = document.getElementById('captionInput').value;
-      const isScheduled = document.getElementById('scheduleToggle').checked;
-      const scheduleTime = document.getElementById('scheduleDateTime').value;
-      const statusEl = document.getElementById('statusText');
+      var postType = document.getElementById('postType').value;
+      var caption = document.getElementById('captionInput').value;
+      var isScheduled = document.getElementById('scheduleToggle').checked;
+      var scheduleTime = document.getElementById('scheduleDateTime').value;
+      var statusEl = document.getElementById('statusText');
 
-      if (!mediaInput.files.length || !postType) {
-        alert('⚠️ اختر الملف ونوع النشر');
+      if (!selectedFiles.length || !postType) {
+        alert('⚠️ اختر الملفات ونوع النشر');
         return;
       }
 
@@ -1430,133 +1527,142 @@
       }
 
       if (isScheduled) {
-        const st = new Date(scheduleTime);
-        const nowBd = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Baghdad' }));
+        var st = new Date(scheduleTime);
+        var nowBd = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Baghdad' }));
         if (st <= nowBd) {
           alert('⚠️ يجب أن يكون وقت النشر في المستقبل');
           return;
         }
       }
 
-      const file = mediaInput.files[0];
-      const fileType = file.type.startsWith('image/') ? 'image' : 'video';
-      const fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
-      const uniqueName = `${currentUser.id}_${Date.now()}_${file.name}`;
+      var totalFiles = selectedFiles.length;
+      var successCount = 0;
+      var failCount = 0;
 
-      statusEl.innerHTML = '<div class="status loading">جار الرفع <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
+      statusEl.innerHTML = '<div class="status loading">جار رفع ونشر ' + totalFiles + ' ملف <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
 
-      try {
-        // Upload to Supabase Storage
-        const { data: upData, error: upErr } = await sb.storage
-          .from('videos')
-          .upload(uniqueName, file, { cacheControl: '3600', upsert: false });
+      for (var i = 0; i < selectedFiles.length; i++) {
+        var file = selectedFiles[i];
+        var fileType = file.type.startsWith('image/') ? 'image' : 'video';
+        var fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+        var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        var uniqueName = currentUser.id + '_' + Date.now() + '_' + safeName;
 
-        if (upErr) throw new Error('فشل الرفع: ' + upErr.message);
+        // Show progress
+        var progressBar = document.getElementById('progress-' + i);
+        var progressFill = document.getElementById('progress-fill-' + i);
+        var fileItem = document.getElementById('file-item-' + i);
+        if (progressBar) progressBar.style.display = 'block';
+        if (progressFill) progressFill.style.width = '30%';
 
-        const { data: urlData } = sb.storage.from('videos').getPublicUrl(uniqueName);
-        const fileUrl = urlData.publicUrl;
+        statusEl.innerHTML = '<div class="status loading">📤 (' + (i + 1) + '/' + totalFiles + ') جار رفع: ' + file.name + ' <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
 
-        statusEl.innerHTML = '<div class="status loading">جار الإرسال <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
+        try {
+          // Upload to Supabase Storage
+          var upResult = await sb.storage.from('videos').upload(uniqueName, file, { cacheControl: '3600', upsert: false });
+          if (upResult.error) throw new Error('فشل الرفع: ' + upResult.error.message);
 
-        // Send to n8n webhook (user-specific)
-        const userWebhook = currentUser.webhook_url || '';
-        if (userWebhook) {
-          try {
-            const payload = {
-              file_url: fileUrl,
-              file_name: file.name,
-              file_size: fileSize,
-              file_type: fileType,
+          var urlData = sb.storage.from('videos').getPublicUrl(uniqueName);
+          var fileUrl = urlData.data.publicUrl;
+
+          if (progressFill) progressFill.style.width = '60%';
+
+          // Send to webhook
+          var userWebhook = currentUser.webhook_url || '';
+          if (userWebhook) {
+            try {
+              var payload = {
+                file_url: fileUrl,
+                file_name: file.name,
+                file_size: fileSize,
+                file_type: fileType,
+                post_type: postType,
+                caption: caption || '',
+                user_email: currentUser.email,
+                user_id: currentUser.id,
+                scheduled: isScheduled,
+                batch_index: i + 1,
+                batch_total: totalFiles
+              };
+
+              if (isScheduled) {
+                payload.schedule_time = new Date(scheduleTime).toISOString();
+                payload.timezone = 'Asia/Baghdad';
+              }
+
+              await fetch(userWebhook, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+              });
+            } catch (wErr) {
+              console.warn('⚠️ Webhook error:', wErr.message);
+            }
+          }
+
+          if (progressFill) progressFill.style.width = '80%';
+
+          // Save to database
+          if (isScheduled) {
+            await sb.from('scheduled_posts').insert([{
+              user_id: currentUser.id,
+              user_email: currentUser.email,
               post_type: postType,
               caption: caption || '',
-              user_email: currentUser.email,
+              file_url: fileUrl,
+              file_type: fileType,
+              schedule_time: new Date(scheduleTime).toISOString(),
+              timezone: 'Asia/Baghdad',
+              platforms: ['all'],
+              status: 'pending',
+              metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName }
+            }]);
+          } else {
+            await sb.from('published_posts').insert([{
               user_id: currentUser.id,
-              scheduled: isScheduled
-            };
-
-            if (isScheduled) {
-              payload.schedule_time = new Date(scheduleTime).toISOString();
-              payload.timezone = 'Asia/Baghdad';
-            }
-
-            await fetch(userWebhook, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            });
-          } catch (wErr) {
-            console.warn('⚠️ Webhook error (continuing):', wErr.message);
+              user_email: currentUser.email,
+              post_type: postType,
+              caption: caption || '',
+              file_url: fileUrl,
+              file_type: fileType,
+              platform: 'all',
+              status: 'published',
+              metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName }
+            }]);
           }
+
+          if (progressFill) progressFill.style.width = '100%';
+          if (fileItem) fileItem.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+          successCount++;
+
+        } catch (err) {
+          console.error('Error with file ' + file.name + ':', err);
+          failCount++;
+          if (progressFill) { progressFill.style.width = '100%'; progressFill.style.background = '#ef4444'; }
+          if (fileItem) fileItem.style.borderColor = 'rgba(239, 68, 68, 0.5)';
         }
-
-        statusEl.innerHTML = '<div class="status loading">جار الحفظ <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
-
-        // Save to database
-        if (isScheduled) {
-          const { error } = await sb.from('scheduled_posts').insert([{
-            user_id: currentUser.id,
-            user_email: currentUser.email,
-            post_type: postType,
-            caption: caption || '',
-            file_url: fileUrl,
-            file_type: fileType,
-            schedule_time: new Date(scheduleTime).toISOString(),
-            timezone: 'Asia/Baghdad',
-            platforms: ['all'],
-            status: 'pending',
-            metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName }
-          }]);
-
-          if (error) throw new Error('فشل الحفظ: ' + error.message);
-
-          const fmtTime = new Date(scheduleTime).toLocaleString('ar-IQ', {
-            timeZone: 'Asia/Baghdad', year: 'numeric', month: 'long', day: 'numeric',
-            hour: '2-digit', minute: '2-digit', weekday: 'long'
-          });
-
-          statusEl.innerHTML = `<div class="status success">
-            ✅ تم بنجاح!<br><br>
-            <strong>📤 تم رفع الملف</strong><br>
-            <strong>💾 تم الحفظ</strong><br><br>
-            <strong>⏰ موعد النشر:</strong><br>${fmtTime}<br><br>
-            <small>📁 ${file.name} (${fileSize})</small>
-          </div>`;
-        } else {
-          const { error } = await sb.from('published_posts').insert([{
-            user_id: currentUser.id,
-            user_email: currentUser.email,
-            post_type: postType,
-            caption: caption || '',
-            file_url: fileUrl,
-            file_type: fileType,
-            platform: 'instagram',
-            status: 'published',
-            metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName }
-          }]);
-
-          if (error) throw new Error('فشل الحفظ: ' + error.message);
-
-          statusEl.innerHTML = `<div class="status success">
-            ✅ تم النشر بنجاح!<br><br>
-            <strong>📤 تم الرفع</strong><br>
-            <strong>💾 تم الحفظ</strong><br><br>
-            <small>📁 ${file.name} (${fileSize})</small>
-          </div>`;
-        }
-
-        // Reset form
-        mediaInput.value = '';
-        document.getElementById('postType').value = '';
-        document.getElementById('captionInput').value = '';
-        document.getElementById('scheduleToggle').checked = false;
-        document.getElementById('scheduleDateTime').value = '';
-        toggleCaption();
-        toggleSchedule();
-
-      } catch (err) {
-        console.error(err);
-        statusEl.innerHTML = '<div class="status error">❌ ' + err.message + '</div>';
       }
+
+      // Final status
+      var resultHtml = '<div class="status success">';
+      resultHtml += '✅ اكتمل النشر!<br><br>';
+      resultHtml += '<strong>📊 النتائج:</strong><br>';
+      resultHtml += '✅ نجح: <strong>' + successCount + '</strong> ملف<br>';
+      if (failCount > 0) resultHtml += '❌ فشل: <strong>' + failCount + '</strong> ملف<br>';
+      resultHtml += '<br><small>المجموع: ' + totalFiles + ' ملف</small>';
+      resultHtml += '</div>';
+      statusEl.innerHTML = resultHtml;
+
+      // Reset
+      selectedFiles = [];
+      document.getElementById('mediaInput').value = '';
+      document.getElementById('filesListPreview').innerHTML = '';
+      document.getElementById('postType').value = '';
+      document.getElementById('captionInput').value = '';
+      document.getElementById('scheduleToggle').checked = false;
+      document.getElementById('scheduleDateTime').value = '';
+      toggleCaption();
+      toggleSchedule();
     }
 
     // ========================================
@@ -2000,12 +2106,11 @@
     // 🐙 AI DESCRIPTION GENERATOR
     // ========================================
     async function aiGenerateDesc() {
-      var mediaInput = document.getElementById('mediaInput');
       var captionInput = document.getElementById('captionInput');
       var statusEl = document.getElementById('aiDescStatus');
       var btn = document.getElementById('aiDescBtn');
 
-      if (!mediaInput || !mediaInput.files.length) {
+      if (!selectedFiles.length) {
         statusEl.innerHTML = '<div style="padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;font-size:13px;color:#ef4444;text-align:center;">❌ اختر فيديو أو صورة أولاً</div>';
         return;
       }
@@ -2022,7 +2127,7 @@
       statusEl.innerHTML = '<div style="padding:10px;background:rgba(0,245,255,0.1);border:1px solid rgba(0,245,255,0.3);border-radius:10px;font-size:13px;color:var(--primary);text-align:center;">🐙 جار رفع الملف <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
 
       try {
-        var file = mediaInput.files[0];
+        var file = selectedFiles[0];
         var fileType = file.type.startsWith('image/') ? 'image' : 'video';
         var fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
         var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
