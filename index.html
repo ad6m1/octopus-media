@@ -865,93 +865,7 @@
         <!-- Profile Header -->
         <div class="profile-header" id="profileHeader"></div>
 
-
-
-      </div>
-    </div>
-
-
-
-        <!-- ========== AUTO REPLY PAGE ========== -->
-        <div class="hidden" id="autoReplyPage">
-          <div class="app-header">
-            <h1><i class="fas fa-robot"></i> إدارة الرد الآلي</h1>
-            <p>تحكم في إعدادات الردود التلقائية المدعومة بالذكاء الاصطناعي.</p>
-          </div>
-
-          <div class="section-card">
-            <div class="schedule-toggle">
-              <input type="checkbox" id="globalAutoReplyToggle">
-              <label for="globalAutoReplyToggle"><i class="fas fa-toggle-on"></i> تفعيل الرد الآلي بالكامل</label>
-            </div>
-            <div class="info-alert" style="margin-top: 15px;">
-              <i class="fas fa-info-circle"></i> عند تعطيل الرد الآلي، لن يتم إرسال أي ردود تلقائية على أي منصة.
-            </div>
-          </div>
-
-          <div class="section-card">
-            <h2><i class="fas fa-share-alt"></i> إعدادات المنصات</h2>
-            <p class="text-muted">تحكم في تفعيل الرد الآلي لكل منصة على حدة.</p>
-
-            <div class="platform-settings" id="platformSettingsContainer">
-              <!-- Platform settings will be loaded here by JS -->
-            </div>
-          </div>
-
-          <div class="section-card">
-            <h2><i class="fas fa-brain"></i> تعليمات الذكاء الاصطناعي (AI Prompt)</h2>
-            <p class="text-muted">اكتب التعليمات التي توجه الذكاء الاصطناعي للرد على رسائل العملاء.</p>
-            <textarea id="aiPromptTextarea" rows="8" placeholder="مثال: أنت مساعد افتراضي لمتجر ... كن ودوداً ومفيداً."></textarea>
-            <button class="btn btn-primary" onclick="saveAiPrompt()">
-              <span><i class="fas fa-save"></i> حفظ التعليمات</span>
-            </button>
-          </div>
-
-          <div class="section-card">
-            <h2><i class="fas fa-book"></i> قاعدة المعرفة (Knowledge Base)</h2>
-            <p class="text-muted">أضف المعلومات التي يجب أن يستخدمها الذكاء الاصطناعي للإجابة على الأسئلة.</p>
-            <textarea id="knowledgeBaseTextarea" rows="10" placeholder="مثال: ساعات العمل: من 9 صباحاً إلى 5 مساءً. سياسة الإرجاع: ..."></textarea>
-            <button class="btn btn-primary" onclick="saveKnowledgeBase()">
-              <span><i class="fas fa-save"></i> حفظ قاعدة المعرفة</span>
-            </button>
-          </div>
-
-          <div class="section-card">
-            <h2><i class="fas fa-microphone-alt"></i> نبرة الصوت (Tone of Voice)</h2>
-            <p class="text-muted">اختر النبرة التي يجب أن يستخدمها الذكاء الاصطناعي في ردوده.</p>
-            <select id="toneOfVoiceSelect">
-              <option value="friendly">ودود</option>
-              <option value="formal">رسمي</option>
-              <option value="humorous">فكاهي</option>
-              <option value="professional">احترافي</option>
-            </select>
-            <button class="btn btn-primary" onclick="saveToneOfVoice()">
-              <span><i class="fas fa-save"></i> حفظ نبرة الصوت</span>
-            </button>
-          </div>
-
-          <div class="section-card">
-            <h2><i class="fas fa-vial"></i> معاينة واختبار الرد الآلي</h2>
-            <p class="text-muted">اكتب سؤالاً لمعاينة كيف سيرد الذكاء الاصطناعي.</p>
-            <textarea id="testQuestionTextarea" rows="3" placeholder="اكتب سؤالاً هنا..."></textarea>
-            <button class="btn btn-primary" onclick="testAutoReply()">
-              <span><i class="fas fa-play"></i> اختبار الرد</span>
-            </button>
-            <div id="testReplyResult" class="status" style="margin-top: 15px; display: none;"></div>
-          </div>
-
-          <div class="section-card">
-            <h2><i class="fas fa-history"></i> سجل الردود</h2>
-            <p class="text-muted">عرض سجل الرسائل الواردة والردود التلقائية.</p>
-            <div id="responseLogContainer" style="max-height: 300px; overflow-y: auto;">
-              <!-- Response log will be loaded here by JS -->
-              <p class="text-muted" style="text-align: center; padding: 20px;">لا توجد سجلات عرض حالياً.</p>
-            </div>
-          </div>
-
-        </div>
-
-    <!-- Modals -->
+        <!-- Nav -->
         <div class="nav" id="mainNav">
           <button class="btn active" id="navPublish" onclick="goPage('publish')">
             <span><i class="fas fa-upload"></i> النشر</span>
@@ -961,9 +875,6 @@
           </button>
           <button class="btn" id="navHistory" onclick="goPage('history')">
             <span><i class="fas fa-history"></i> السجل</span>
-          </button>
-          <button class="btn" id="navAutoReply" onclick="goPage('autoReply')">
-            <span><i class="fas fa-robot"></i> الرد الآلي</span>
           </button>
           <button class="btn" id="navAdmin" onclick="goPage('admin')" style="display:none;">
             <span><i class="fas fa-users-cog"></i> الإدارة</span>
