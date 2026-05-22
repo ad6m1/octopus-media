@@ -870,8 +870,8 @@
           <button class="btn active" id="navPublish" onclick="goPage('publish')">
             <span><i class="fas fa-upload"></i> النشر</span>
           </button>
-          <button class="btn" id="navTrend" onclick="goPage('trend')">
-            <span><i class="fas fa-fire"></i> الترندات</span>
+          <button class="btn" id="navBot" onclick="goPage('bot')">
+            <span><i class="fas fa-robot"></i> الرد الآلي</span>
           </button>
           <button class="btn" id="navHistory" onclick="goPage('history')">
             <span><i class="fas fa-history"></i> السجل</span>
@@ -955,47 +955,81 @@
           </a>
         </div>
 
-        <!-- ===== TREND DETECTOR PAGE ===== -->
-        <div id="trendPage" class="hidden">
+        <!-- ===== AUTO-REPLY BOT PAGE ===== -->
+        <div id="botPage" class="hidden">
           <div style="text-align:center;margin-bottom:25px;">
-            <div style="display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,#ff006e,#ff6b35);margin-bottom:15px;font-size:28px;">🔥</div>
-            <h2 style="font-size:22px;color:var(--accent);margin-bottom:8px;">Trend Detector</h2>
-            <p style="color:var(--text-muted);font-size:13px;">اكتشف الترندات والهاشتاكات الصاعدة لمجالك</p>
+            <div style="display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,#10b981,#059669);margin-bottom:15px;font-size:28px;">🤖</div>
+            <h2 style="font-size:22px;color:var(--success);margin-bottom:8px;">الرد الآلي الذكي</h2>
+            <p style="color:var(--text-muted);font-size:13px;">تحكم بالذكاء الاصطناعي اللي يرد على رسائل حساباتك</p>
           </div>
 
+          <!-- Bot Status Toggle -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px;background:rgba(0,0,0,0.2);border:1px solid rgba(0,245,255,0.1);border-radius:18px;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div id="botStatusDot" style="width:12px;height:12px;border-radius:50%;background:#ef4444;box-shadow:0 0 8px rgba(239,68,68,0.5);transition:all 0.3s;"></div>
+              <div>
+                <strong id="botStatusText" style="font-size:16px;">الرد الآلي متوقف</strong>
+                <p id="botStatusSub" style="font-size:12px;color:var(--text-muted);margin-top:2px;">اضغط لتفعيل</p>
+              </div>
+            </div>
+            <button onclick="toggleBot()" id="botToggleBtn" style="padding:10px 24px;border:none;border-radius:12px;background:linear-gradient(135deg,#10b981,#059669);color:white;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;">
+              تفعيل
+            </button>
+          </div>
+
+          <!-- Connected Platforms -->
+          <div style="margin-bottom:20px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:12px;"><i class="fas fa-share-alt" style="color:var(--primary);"></i> المنصات المفعّلة</label>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;" id="botPlatforms">
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid rgba(0,245,255,0.2);border-radius:12px;cursor:pointer;transition:all 0.3s;" onclick="this.querySelector('input').click()">
+                <input type="checkbox" class="botPlatformCb" value="instagram" checked style="accent-color:var(--primary);width:18px;height:18px;"> <i class="fab fa-instagram" style="color:#E1306C;"></i> Instagram
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid rgba(0,245,255,0.2);border-radius:12px;cursor:pointer;transition:all 0.3s;" onclick="this.querySelector('input').click()">
+                <input type="checkbox" class="botPlatformCb" value="facebook" checked style="accent-color:var(--primary);width:18px;height:18px;"> <i class="fab fa-facebook" style="color:#1877F2;"></i> Facebook
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid rgba(0,245,255,0.2);border-radius:12px;cursor:pointer;transition:all 0.3s;" onclick="this.querySelector('input').click()">
+                <input type="checkbox" class="botPlatformCb" value="whatsapp" style="accent-color:var(--primary);width:18px;height:18px;"> <i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp
+              </label>
+            </div>
+          </div>
+
+          <!-- AI Prompt -->
           <div class="form-group">
-            <label><i class="fas fa-bullseye"></i> اختر المجال</label>
-            <select id="trendNiche">
-              <option value="عام">عام - كل المجالات</option>
-              <option value="مطاعم وأكل عراقي">مطاعم وأكل</option>
-              <option value="أزياء وموضة عراقية">أزياء وموضة</option>
-              <option value="تقنية وتكنولوجيا">تقنية</option>
-              <option value="سيارات">سيارات</option>
-              <option value="عقارات عراقية">عقارات</option>
-              <option value="رياضة عراقية">رياضة</option>
-              <option value="سفر وسياحة بالعراق">سفر وسياحة</option>
-              <option value="صحة وجمال">صحة وجمال</option>
-              <option value="ترفيه وكوميديا عراقية">ترفيه وكوميديا</option>
-              <option value="بزنس وتسويق">بزنس وتسويق</option>
-            </select>
+            <label><i class="fas fa-brain" style="color:var(--secondary);"></i> شخصية الذكاء الاصطناعي (Prompt)</label>
+            <textarea id="botPrompt" placeholder="مثال: أنت مساعد خدمة عملاء لمطعم عراقي اسمه 'شاورما الملك'. رد بلهجة عراقية ودية. أجب عن الأسعار والعروض والموقع. إذا سألوا عن التوصيل قل متوفر داخل بغداد..." style="min-height:140px;"></textarea>
+            <small style="color:var(--text-muted);display:block;margin-top:6px;">هنا تكتب شلون تريد الذكاء الاصطناعي يرد. كل ما كان الوصف مفصّل، الرد يكون أدق.</small>
           </div>
 
+          <!-- Quick Replies -->
           <div class="form-group">
-            <label><i class="fas fa-globe"></i> المنصة</label>
-            <select id="trendPlatform">
-              <option value="الكل">جميع المنصات</option>
-              <option value="TikTok">TikTok</option>
-              <option value="Instagram Reels">Instagram Reels</option>
-              <option value="YouTube Shorts">YouTube Shorts</option>
-              <option value="Facebook">Facebook</option>
-            </select>
+            <label><i class="fas fa-reply-all" style="color:var(--primary);"></i> ردود سريعة جاهزة (اختياري)</label>
+            <textarea id="botQuickReplies" placeholder="اكتب كل رد بسطر جديد:&#10;مرحباً! كيف أكدر أساعدك؟&#10;أسعارنا تبدأ من 5000 دينار&#10;موقعنا: بغداد - الكرادة&#10;ساعات العمل: 10 صباحاً - 12 ليلاً" style="min-height:100px;"></textarea>
+            <small style="color:var(--text-muted);display:block;margin-top:6px;">ردود ثابتة يرسلها البوت بدون AI (كل رد بسطر)</small>
           </div>
 
-          <button class="btn" onclick="detectTrends()" id="trendBtn" style="background:linear-gradient(135deg,#ff006e,#ff6b35);color:white;box-shadow:0 10px 30px rgba(255,0,110,0.3);">
-            <span><i class="fas fa-search"></i> اكتشف الترندات الآن</span>
+          <!-- Excluded Words -->
+          <div class="form-group">
+            <label><i class="fas fa-ban" style="color:var(--accent);"></i> كلمات محظورة (لا يرد عليها)</label>
+            <input type="text" id="botExcludedWords" placeholder="مثال: سعر المنافس, شكوى, حرام" style="padding:14px 18px;">
+            <small style="color:var(--text-muted);display:block;margin-top:6px;">إذا الرسالة تحتوي هالكلمات، البوت ما يرد (مفصولة بفاصلة)</small>
+          </div>
+
+          <!-- Save Button -->
+          <button class="btn" onclick="saveBotSettings()" id="saveBotBtn" style="background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 10px 30px rgba(16,185,129,0.3);">
+            <span><i class="fas fa-save"></i> حفظ الإعدادات</span>
           </button>
+          <div id="botSettingsStatus" style="margin-top:12px;"></div>
 
-          <div id="trendResult" style="margin-top:20px;"></div>
+          <!-- Recent Messages -->
+          <div style="margin-top:30px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+              <label style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;margin:0;"><i class="fas fa-comments" style="color:var(--primary);"></i> آخر الرسائل</label>
+              <button onclick="loadBotMessages()" style="padding:6px 14px;border:none;border-radius:8px;background:rgba(0,245,255,0.15);color:var(--primary);font-family:inherit;font-size:12px;cursor:pointer;font-weight:600;"><i class="fas fa-sync-alt"></i> تحديث</button>
+            </div>
+            <div id="botMessagesContainer">
+              <div class="info-alert"><i class="fas fa-info-circle"></i> سيتم عرض الرسائل بعد تفعيل البوت</div>
+            </div>
+          </div>
         </div>
 
         <!-- ===== HISTORY PAGE ===== -->
@@ -1068,8 +1102,12 @@
               <input type="text" id="newUserConnectUrl" placeholder="https://app.upload-post.com/connect?token=..." style="padding: 14px 18px; direction: ltr; text-align: left;">
             </div>
             <div class="form-group" style="margin-bottom:15px;">
-              <label style="font-size: 13px;"><i class="fas fa-satellite-dish"></i> رابط الويب هوك (n8n Webhook URL)</label>
-              <input type="text" id="newUserWebhookUrl" placeholder="https://n8n.srv1099752.hstgr.cloud/webhook/..." style="padding: 14px 18px; direction: ltr; text-align: left;">
+              <label style="font-size: 13px;"><i class="fas fa-satellite-dish"></i> رابط الويب هوك - النشر (n8n)</label>
+              <input type="text" id="newUserWebhookUrl" placeholder="https://n8n.../webhook/publish" style="padding: 14px 18px; direction: ltr; text-align: left;">
+            </div>
+            <div class="form-group" style="margin-bottom:15px;">
+              <label style="font-size: 13px;"><i class="fas fa-robot"></i> رابط الويب هوك - الرد الآلي (n8n)</label>
+              <input type="text" id="newUserWebhookBot" placeholder="https://n8n.../webhook/bot" style="padding: 14px 18px; direction: ltr; text-align: left;">
             </div>
             <div class="form-group" style="margin-bottom:15px;">
               <label style="font-size: 13px;"><i class="fas fa-clock"></i> صلاحية مؤقتة (أيام) - اتركه فارغ لصلاحية دائمة</label>
@@ -1384,7 +1422,7 @@
     function goPage(page) {
       // Hide all
       document.getElementById('publishPage').classList.add('hidden');
-      document.getElementById('trendPage').classList.add('hidden');
+      document.getElementById('botPage').classList.add('hidden');
       document.getElementById('historyPage').classList.add('hidden');
       document.getElementById('adminPage').classList.add('hidden');
       document.getElementById('musicPage').classList.add('hidden');
@@ -1401,9 +1439,10 @@
       if (page === 'publish') {
         document.getElementById('publishPage').classList.remove('hidden');
         setActiveNav('navPublish');
-      } else if (page === 'trend') {
-        document.getElementById('trendPage').classList.remove('hidden');
-        setActiveNav('navTrend');
+      } else if (page === 'bot') {
+        document.getElementById('botPage').classList.remove('hidden');
+        setActiveNav('navBot');
+        loadBotSettings();
       } else if (page === 'history') {
         document.getElementById('historyPage').classList.remove('hidden');
         setActiveNav('navHistory');
@@ -1852,6 +1891,7 @@
       const code = document.getElementById('newUserCode').value.trim();
       const connectUrl = document.getElementById('newUserConnectUrl').value.trim();
       const webhookUrl = document.getElementById('newUserWebhookUrl').value.trim();
+      const webhookBot = document.getElementById('newUserWebhookBot').value.trim();
       const days = document.getElementById('newUserDays').value.trim();
       const statusEl = document.getElementById('addUserStatus');
 
@@ -1873,7 +1913,8 @@
           status: 'active',
           temp_expiry: null,
           connect_url: connectUrl || null,
-          webhook_url: webhookUrl || null
+          webhook_url: webhookUrl || null,
+          webhook_bot: webhookBot || null
         };
 
         if (days && parseInt(days) > 0) {
@@ -1899,6 +1940,7 @@
         document.getElementById('newUserCode').value = '';
         document.getElementById('newUserConnectUrl').value = '';
         document.getElementById('newUserWebhookUrl').value = '';
+        document.getElementById('newUserWebhookBot').value = '';
         document.getElementById('newUserDays').value = '';
         loadUsers();
 
@@ -2175,78 +2217,171 @@
     }
 
     // ========================================
-    // 🔥 TREND DETECTOR (uses same webhook)
+    // 🤖 AUTO-REPLY BOT
     // ========================================
-    async function detectTrends() {
-      var niche = document.getElementById('trendNiche').value;
-      var platform = document.getElementById('trendPlatform').value;
-      var resultEl = document.getElementById('trendResult');
-      var btn = document.getElementById('trendBtn');
+    var botSettings = { enabled: false, platforms: ['instagram','facebook'], prompt: '', quick_replies: '', excluded_words: '' };
 
-      var userWebhook = currentUser.webhook_url;
-      if (!userWebhook) {
-        resultEl.innerHTML = '<div class="status error">❌ لم يتم تحديد رابط الويب هوك. تواصل مع المدير</div>';
-        return;
+    async function loadBotSettings() {
+      try {
+        var { data } = await sb.from('bot_settings').select('*').eq('user_id', currentUser.id).single();
+        if (data) {
+          botSettings = data;
+          document.getElementById('botPrompt').value = data.prompt || '';
+          document.getElementById('botQuickReplies').value = data.quick_replies || '';
+          document.getElementById('botExcludedWords').value = data.excluded_words || '';
+          // Set platform checkboxes
+          var platforms = data.platforms || [];
+          document.querySelectorAll('.botPlatformCb').forEach(function(cb) {
+            cb.checked = platforms.indexOf(cb.value) !== -1;
+          });
+          updateBotStatusUI(data.enabled);
+        }
+      } catch (e) {
+        console.log('No bot settings yet');
       }
+      loadBotMessages();
+    }
 
-      btn.innerHTML = '<span><i class="fas fa-spinner fa-spin"></i> جار البحث...</span>';
-      btn.disabled = true;
-      resultEl.innerHTML = '<div class="status loading">🔥 جار تحليل الترندات <span class="dots"><span>.</span><span>.</span><span>.</span></span></div>';
+    function updateBotStatusUI(enabled) {
+      var dot = document.getElementById('botStatusDot');
+      var text = document.getElementById('botStatusText');
+      var sub = document.getElementById('botStatusSub');
+      var btn = document.getElementById('botToggleBtn');
+      if (enabled) {
+        dot.style.background = '#10b981';
+        dot.style.boxShadow = '0 0 8px rgba(16,185,129,0.5)';
+        text.textContent = 'الرد الآلي مفعّل ✅';
+        sub.textContent = 'يرد على الرسائل تلقائياً';
+        btn.textContent = 'إيقاف';
+        btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+      } else {
+        dot.style.background = '#ef4444';
+        dot.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)';
+        text.textContent = 'الرد الآلي متوقف';
+        sub.textContent = 'اضغط لتفعيل';
+        btn.textContent = 'تفعيل';
+        btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+      }
+    }
+
+    async function toggleBot() {
+      var newState = !botSettings.enabled;
+      try {
+        // Send toggle command to bot webhook
+        var botWebhook = currentUser.webhook_bot;
+        if (botWebhook) {
+          await fetch(botWebhook, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: newState ? 'enable_bot' : 'disable_bot',
+              user_id: currentUser.id,
+              user_email: currentUser.email
+            })
+          }).catch(function() {});
+        }
+
+        // Save to database
+        await sb.from('bot_settings').upsert({
+          user_id: currentUser.id,
+          user_email: currentUser.email,
+          enabled: newState,
+          platforms: botSettings.platforms || ['instagram','facebook'],
+          prompt: botSettings.prompt || '',
+          quick_replies: botSettings.quick_replies || '',
+          excluded_words: botSettings.excluded_words || ''
+        }, { onConflict: 'user_id' });
+
+        botSettings.enabled = newState;
+        updateBotStatusUI(newState);
+      } catch (e) {
+        alert('❌ ' + e.message);
+      }
+    }
+
+    async function saveBotSettings() {
+      var prompt = document.getElementById('botPrompt').value.trim();
+      var quickReplies = document.getElementById('botQuickReplies').value.trim();
+      var excludedWords = document.getElementById('botExcludedWords').value.trim();
+      var platforms = [];
+      document.querySelectorAll('.botPlatformCb:checked').forEach(function(cb) { platforms.push(cb.value); });
+      var statusEl = document.getElementById('botSettingsStatus');
+
+      statusEl.innerHTML = '<div class="status loading">جار الحفظ...</div>';
 
       try {
-        var response = await fetch(userWebhook, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'detect_trends', niche: niche, platform: platform, user_email: currentUser.email, user_id: currentUser.id })
-        });
-        if (!response.ok) throw new Error('فشل الاتصال: ' + response.status);
+        var settingsData = {
+          user_id: currentUser.id,
+          user_email: currentUser.email,
+          enabled: botSettings.enabled || false,
+          platforms: platforms,
+          prompt: prompt,
+          quick_replies: quickReplies,
+          excluded_words: excludedWords
+        };
 
-        var result = await response.json();
-        if (typeof result === 'string') result = JSON.parse(result);
-        if (result.output) result = typeof result.output === 'string' ? JSON.parse(result.output) : result.output;
-        if (result.data) result = typeof result.data === 'string' ? JSON.parse(result.data) : result.data;
+        await sb.from('bot_settings').upsert(settingsData, { onConflict: 'user_id' });
+
+        // Send updated settings to bot webhook
+        var botWebhook = currentUser.webhook_bot;
+        if (botWebhook) {
+          await fetch(botWebhook, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'update_settings',
+              user_id: currentUser.id,
+              user_email: currentUser.email,
+              settings: settingsData
+            })
+          }).catch(function() {});
+        }
+
+        botSettings = settingsData;
+        statusEl.innerHTML = '<div class="status success">✅ تم حفظ إعدادات الرد الآلي</div>';
+        setTimeout(function() { statusEl.innerHTML = ''; }, 3000);
+      } catch (e) {
+        statusEl.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+      }
+    }
+
+    async function loadBotMessages() {
+      var container = document.getElementById('botMessagesContainer');
+      try {
+        var { data, error } = await sb.from('bot_messages')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (error) throw error;
+        if (!data || !data.length) {
+          container.innerHTML = '<div class="info-alert"><i class="fas fa-info-circle"></i> لا توجد رسائل بعد</div>';
+          return;
+        }
 
         var html = '';
-        if (result.trends && result.trends.length) {
-          html += '<div style="margin-bottom:20px;"><h3 style="color:var(--accent);font-size:16px;margin-bottom:12px;"><i class="fas fa-fire"></i> الترندات</h3>';
-          result.trends.forEach(function(t) {
-            html += '<div style="background:rgba(255,0,110,0.06);border:1px solid rgba(255,0,110,0.15);border-radius:14px;padding:14px;margin-bottom:10px;"><div style="display:flex;justify-content:space-between;align-items:center;"><strong>' + t.title + '</strong><span>' + (t.heat||'🔥') + '</span></div><p style="color:var(--text-muted);font-size:13px;margin-top:6px;">' + t.description + '</p></div>';
-          });
+        data.forEach(function(msg) {
+          var time = new Date(msg.created_at).toLocaleString('ar-IQ', { timeZone: 'Asia/Baghdad' });
+          var platformIcon = msg.platform === 'instagram' ? 'fab fa-instagram' : msg.platform === 'facebook' ? 'fab fa-facebook' : 'fab fa-whatsapp';
+          var platformColor = msg.platform === 'instagram' ? '#E1306C' : msg.platform === 'facebook' ? '#1877F2' : '#25D366';
+
+          html += '<div style="background:rgba(0,0,0,0.2);border:1px solid rgba(0,245,255,0.08);border-radius:14px;padding:14px;margin-bottom:10px;">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+          html += '<div style="display:flex;align-items:center;gap:8px;"><i class="' + platformIcon + '" style="color:' + platformColor + ';"></i><strong style="font-size:13px;">' + (msg.sender_name || 'مستخدم') + '</strong></div>';
+          html += '<small style="color:var(--text-muted);">' + time + '</small>';
           html += '</div>';
-        }
-        if (result.sounds && result.sounds.length) {
-          html += '<div style="margin-bottom:20px;"><h3 style="color:var(--primary);font-size:16px;margin-bottom:12px;"><i class="fas fa-music"></i> الأصوات الصاعدة</h3>';
-          result.sounds.forEach(function(s) {
-            html += '<div style="background:rgba(0,245,255,0.06);border:1px solid rgba(0,245,255,0.15);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;"><div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-volume-up" style="color:white;"></i></div><div><strong>' + s.name + '</strong><br><small style="color:var(--text-muted);">' + s.usage + '</small></div></div>';
-          });
+          html += '<div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px;margin-bottom:6px;"><p style="font-size:13px;color:var(--text-muted);margin:0;">📩 ' + (msg.message || '') + '</p></div>';
+          if (msg.reply) {
+            html += '<div style="background:rgba(16,185,129,0.08);border-radius:10px;padding:10px;border-right:3px solid #10b981;"><p style="font-size:13px;color:var(--text);margin:0;">🤖 ' + msg.reply + '</p></div>';
+          }
           html += '</div>';
-        }
-        if (result.hashtags && result.hashtags.length) {
-          html += '<div style="margin-bottom:20px;"><h3 style="color:var(--success);font-size:16px;margin-bottom:12px;"><i class="fas fa-hashtag"></i> هاشتاكات</h3><div style="display:flex;flex-wrap:wrap;gap:8px;">';
-          result.hashtags.forEach(function(h) {
-            var tag = h.startsWith('#') ? h : '#' + h;
-            html += '<span onclick="navigator.clipboard.writeText(\'' + tag + '\')" style="padding:8px 14px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:20px;font-size:13px;color:var(--success);cursor:pointer;font-weight:600;">' + tag + '</span>';
-          });
-          html += '</div></div>';
-        }
-        if (result.content_ideas && result.content_ideas.length) {
-          html += '<div style="margin-bottom:20px;"><h3 style="color:var(--secondary);font-size:16px;margin-bottom:12px;"><i class="fas fa-lightbulb"></i> أفكار محتوى</h3>';
-          result.content_ideas.forEach(function(idea, i) {
-            html += '<div style="background:rgba(123,47,247,0.06);border:1px solid rgba(123,47,247,0.15);border-radius:14px;padding:14px;margin-bottom:10px;"><div style="display:flex;align-items:flex-start;gap:12px;"><span style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--secondary),var(--accent));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;flex-shrink:0;">' + (i+1) + '</span><div><strong>' + idea.idea + '</strong><br><small style="color:var(--text-muted);">' + (idea.why||'') + '</small></div></div></div>';
-          });
-          html += '</div>';
-        }
-        if (result.tip) {
-          html += '<div style="background:linear-gradient(135deg,rgba(0,245,255,0.08),rgba(123,47,247,0.08));border:1px solid rgba(0,245,255,0.2);border-radius:16px;padding:18px;text-align:center;"><i class="fas fa-star" style="color:var(--primary);font-size:20px;margin-bottom:8px;display:block;"></i><p style="font-size:14px;line-height:1.8;">' + result.tip + '</p></div>';
-        }
-        if (!html) html = '<div class="status success">تم استلام الرد</div>';
-        resultEl.innerHTML = html;
+        });
+
+        container.innerHTML = html;
       } catch (e) {
-        console.error(e);
-        resultEl.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+        container.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
       }
-      btn.innerHTML = '<span><i class="fas fa-search"></i> اكتشف الترندات الآن</span>';
-      btn.disabled = false;
     }
 
     // ========================================
