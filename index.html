@@ -426,7 +426,7 @@
     .btn-danger:hover { transform: translateY(-3px); }
 
     /* === NAV === */
-    .nav { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 30px; }
+    .nav { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 30px; overflow: visible; }
 
     .nav .btn {
       padding: 14px; font-size: 14px;
@@ -883,9 +883,9 @@
           <button class="btn active" id="navPublish" onclick="goPage('publish')">
             <span><i class="fas fa-upload"></i> النشر</span>
           </button>
-          <button class="btn" id="navBot" disabled style="opacity:0.5;cursor:not-allowed;position:relative;">
+          <button class="btn" id="navBot" disabled style="opacity:0.5;cursor:not-allowed;position:relative;overflow:visible;">
             <span><i class="fas fa-robot"></i> الرد الآلي</span>
-            <span style="position:absolute;top:-8px;right:-8px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:bold;">قريباً</span>
+            <span style="position:absolute;top:-8px;right:-8px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:bold;z-index:1;">قريباً</span>
           </button>
           <button class="btn" id="navHistory" onclick="goPage('history')">
             <span><i class="fas fa-history"></i> السجل</span>
@@ -1258,6 +1258,27 @@
     });
 
     // ========================================
+    // 🛡️ SECURITY: HTML Escape utility
+    // ========================================
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // 🛡️ SECURITY: Validate URL (prevent javascript: XSS)
+    function sanitizeUrl(url) {
+      if (!url) return '';
+      var trimmed = url.trim();
+      if (/^https?:\/\//i.test(trimmed)) return trimmed;
+      return '';
+    }
+
+    // ========================================
     // 🔐 SHA-256
     // ========================================
     async function sha256(msg) {
@@ -1283,27 +1304,42 @@
     // ========================================
     // 💾 Remember Me
     // ========================================
-    function saveLogin(email, code) {
+    function saveLogin(email, codeHash) {
       const exp = Date.now() + 30 * 24 * 60 * 60 * 1000;
       localStorage.setItem('oct_email', email);
-      localStorage.setItem('oct_code', code);
+      localStorage.setItem('oct_code_hash', codeHash);
+      localStorage.removeItem('oct_code'); // cleanup old plaintext
       localStorage.setItem('oct_exp', exp);
     }
 
     function clearSaved() {
       localStorage.removeItem('oct_email');
       localStorage.removeItem('oct_code');
+      localStorage.removeItem('oct_code_hash');
       localStorage.removeItem('oct_exp');
     }
 
     function loadSavedLogin() {
       const e = localStorage.getItem('oct_email');
-      const c = localStorage.getItem('oct_code');
+      const h = localStorage.getItem('oct_code_hash');
       const exp = localStorage.getItem('oct_exp');
-      if (!e || !c || !exp || Date.now() > parseInt(exp)) { clearSaved(); return; }
+      if (!e || !h || !exp || Date.now() > parseInt(exp)) { clearSaved(); return; }
       document.getElementById('loginEmail').value = e;
-      document.getElementById('loginCode').value = c;
+      // Password field stays empty for security; auto-login with stored hash
       document.getElementById('rememberMe').checked = true;
+      // Auto-login with saved hash
+      autoLoginWithHash(e, h);
+    }
+
+    async function autoLoginWithHash(email, codeHash) {
+      try {
+        const { data, error } = await sb.from('users').select('*').eq('email', email).eq('code_hash', codeHash).single();
+        if (error || !data) { clearSaved(); return; }
+        if (data.status !== 'active') { clearSaved(); return; }
+        if (data.temp_expiry && new Date(data.temp_expiry) < new Date()) { clearSaved(); return; }
+        currentUser = data;
+        showApp();
+      } catch (e) { clearSaved(); }
     }
 
     // ========================================
@@ -1351,9 +1387,9 @@
           }
         }
 
-        // Save login
+        // Save login (store hash, never plaintext)
         if (document.getElementById('rememberMe').checked) {
-          saveLogin(email, code);
+          saveLogin(email, codeHash);
         } else {
           clearSaved();
         }
@@ -1364,7 +1400,7 @@
 
       } catch (e) {
         console.error(e);
-        statusEl.innerHTML = '<div class="status error">❌ خطأ في الاتصال: ' + e.message + '</div>';
+        statusEl.innerHTML = '<div class="status error">❌ خطأ في الاتصال: ' + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -1399,13 +1435,13 @@
       }
 
       document.getElementById('profileHeader').innerHTML = `
-        <div class="profile-avatar">${initials}</div>
+        <div class="profile-avatar">${escapeHtml(initials)}</div>
         <div class="profile-info">
-          <h3>${currentUser.name}</h3>
-          <p>${currentUser.email}</p>
+          <h3>${escapeHtml(currentUser.name)}</h3>
+          <p>${escapeHtml(currentUser.email)}</p>
           ${subInfo}
         </div>
-        <span class="profile-badge ${currentUser.role}">${currentUser.role === 'admin' ? 'مدير' : 'مشترك'}</span>
+        <span class="profile-badge ${escapeHtml(currentUser.role)}">${currentUser.role === 'admin' ? 'مدير' : 'مشترك'}</span>
       `;
 
       // Load AI settings
@@ -1420,11 +1456,11 @@
         document.getElementById('navMusic').style.display = 'none';
       }
 
-      // Connect button - per user
-      const connectUrl = currentUser.connect_url || '';
+      // Connect button - per user (sanitize URL to prevent XSS)
+      const connectUrl = sanitizeUrl(currentUser.connect_url || '');
       if (connectUrl) {
         document.getElementById('connectBtnWrapper').innerHTML = `
-          <a href="${connectUrl}" target="_blank" style="text-decoration:none;display:block;">
+          <a href="${escapeHtml(connectUrl)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;">
             <button class="btn btn-connect">
               <span><i class="fas fa-link"></i> اربط حساباتك</span>
             </button>
@@ -1577,7 +1613,7 @@
 
         html += '<div class="files-preview-item" id="file-item-' + i + '">';
         html += '<div class="files-preview-icon" style="background:' + color + ';color:white;"><i class="fas ' + icon + '"></i></div>';
-        html += '<div class="files-preview-info"><strong>' + file.name + '</strong><small>' + sizeMB + ' MB</small>';
+        html += '<div class="files-preview-info"><strong>' + escapeHtml(file.name) + '</strong><small>' + sizeMB + ' MB</small>';
         html += '<div class="upload-progress-bar" id="progress-' + i + '" style="display:none;"><div class="upload-progress-fill" id="progress-fill-' + i + '" style="width:0%"></div></div>';
         html += '</div>';
         html += '<button class="files-preview-remove" onclick="removeFile(' + i + ')"><i class="fas fa-times"></i></button>';
@@ -1790,7 +1826,7 @@
 
         container.innerHTML = posts.map(p => renderPost(p, tab)).join('');
       } catch (e) {
-        container.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+        container.innerHTML = '<div class="status error">❌ ' + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -1805,13 +1841,16 @@
       const hasUrl = post.file_url && !post.file_url.includes('pending_upload');
       const typeLabel = post.post_type === 'reels' ? 'ريلز' : post.post_type === 'story' ? 'ستوري' : 'ريلز + ستوري';
 
+      const safeFileUrl = sanitizeUrl(post.file_url);
+      const safePostId = escapeHtml(post.id);
+
       return `
         <div class="post-item">
-          ${hasUrl ? `
+          ${hasUrl && safeFileUrl ? `
             <div class="post-thumb">
               ${post.file_type === 'video'
-                ? `<video src="${post.file_url}" controls preload="metadata"></video>`
-                : `<img src="${post.file_url}" onclick="window.open('${post.file_url}','_blank')" style="cursor:pointer;" alt="">`}
+                ? `<video src="${escapeHtml(safeFileUrl)}" controls preload="metadata"></video>`
+                : `<img src="${escapeHtml(safeFileUrl)}" onclick="window.open('${escapeHtml(safeFileUrl)}','_blank')" style="cursor:pointer;" alt="">`}
             </div>
           ` : `
             <div class="post-thumb-placeholder">
@@ -1827,16 +1866,16 @@
                 </div>
                 <div class="post-meta">
                   <span><i class="fas fa-clock"></i> ${time}</span>
-                  ${meta.file_size ? `<span><i class="fas fa-hdd"></i> ${meta.file_size}</span>` : ''}
+                  ${meta.file_size ? `<span><i class="fas fa-hdd"></i> ${escapeHtml(meta.file_size)}</span>` : ''}
                 </div>
               </div>
               ${tab === 'scheduled' ? `
-                <button class="btn btn-danger" onclick="deletePost('${post.id}')" style="width:auto;padding:8px 15px;font-size:13px;">
+                <button class="btn btn-danger" onclick="deletePost('${safePostId}')" style="width:auto;padding:8px 15px;font-size:13px;">
                   <span><i class="fas fa-trash"></i></span>
                 </button>
               ` : ''}
             </div>
-            ${post.caption ? `<p style="color:var(--text-muted);margin-top:10px;line-height:1.6;font-size:14px;">${post.caption}</p>` : ''}
+            ${post.caption ? `<p style="color:var(--text-muted);margin-top:10px;line-height:1.6;font-size:14px;">${escapeHtml(post.caption)}</p>` : ''}
           </div>
         </div>
       `;
@@ -1902,15 +1941,15 @@
           const toggleLabel = u.status === 'active' ? 'تعطيل' : 'تفعيل';
 
           html += `<tr>
-            <td>${u.name}</td>
-            <td style="font-size:12px;direction:ltr;text-align:right;">${u.email}</td>
+            <td>${escapeHtml(u.name)}</td>
+            <td style="font-size:12px;direction:ltr;text-align:right;">${escapeHtml(u.email)}</td>
             <td>${u.role === 'admin' ? '🔑 مدير' : '👤 مشترك'}</td>
             <td>${statusLabel}</td>
             <td>${expLabel}</td>
             <td>
               <div class="admin-actions">
-                <button class="admin-btn-toggle" onclick="toggleUserStatus('${u.id}', '${u.status}')">${toggleLabel}</button>
-                <button class="admin-btn-delete" onclick="deleteUser('${u.id}', '${u.email}')">حذف</button>
+                <button class="admin-btn-toggle" onclick="toggleUserStatus('${escapeHtml(u.id)}', '${escapeHtml(u.status)}')">${toggleLabel}</button>
+                <button class="admin-btn-delete" onclick="deleteUser('${escapeHtml(u.id)}', '${escapeHtml(u.email)}')">حذف</button>
               </div>
             </td>
           </tr>`;
@@ -1920,7 +1959,7 @@
         container.innerHTML = html;
 
       } catch (e) {
-        container.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+        container.innerHTML = '<div class="status error">❌ ' + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -1984,7 +2023,7 @@
         loadUsers();
 
       } catch (e) {
-        statusEl.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+        statusEl.innerHTML = '<div class="status error">❌ ' + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -2066,7 +2105,7 @@
         aiConfig = { provider, apiKey };
         statusEl.innerHTML = '<div class="status success" style="margin-top:12px;">✅ تم حفظ إعدادات AI</div>';
       } catch (e) {
-        statusEl.innerHTML = '<div class="status error" style="margin-top:12px;">❌ ' + e.message + '</div>';
+        statusEl.innerHTML = '<div class="status error" style="margin-top:12px;">❌ ' + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -2461,7 +2500,7 @@
 
       } catch (e) {
         console.error(e);
-        statusEl.innerHTML = '<div style="padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;font-size:13px;color:#ef4444;text-align:center;">❌ ' + e.message + '</div>';
+        statusEl.innerHTML = '<div style="padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:10px;font-size:13px;color:#ef4444;text-align:center;">❌ ' + escapeHtml(e.message) + '</div>';
       }
 
       // Cleanup: delete files from Gemini
@@ -2602,7 +2641,7 @@
         statusEl.innerHTML = '<div class="status success">✅ تم حفظ إعدادات الرد الآلي</div>';
         setTimeout(function() { statusEl.innerHTML = ''; }, 3000);
       } catch (e) {
-        statusEl.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+        statusEl.innerHTML = '<div class="status error">❌ ' + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -2629,19 +2668,19 @@
 
           html += '<div style="background:rgba(0,0,0,0.2);border:1px solid rgba(0,245,255,0.08);border-radius:14px;padding:14px;margin-bottom:10px;">';
           html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-          html += '<div style="display:flex;align-items:center;gap:8px;"><i class="' + platformIcon + '" style="color:' + platformColor + ';"></i><strong style="font-size:13px;">' + (msg.sender_name || 'مستخدم') + '</strong></div>';
-          html += '<small style="color:var(--text-muted);">' + time + '</small>';
+          html += '<div style="display:flex;align-items:center;gap:8px;"><i class="' + platformIcon + '" style="color:' + platformColor + ';"></i><strong style="font-size:13px;">' + escapeHtml(msg.sender_name || 'مستخدم') + '</strong></div>';
+          html += '<small style="color:var(--text-muted);">' + escapeHtml(time) + '</small>';
           html += '</div>';
-          html += '<div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px;margin-bottom:6px;"><p style="font-size:13px;color:var(--text-muted);margin:0;">📩 ' + (msg.message || '') + '</p></div>';
+          html += '<div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:10px;margin-bottom:6px;"><p style="font-size:13px;color:var(--text-muted);margin:0;">📩 ' + escapeHtml(msg.message || '') + '</p></div>';
           if (msg.reply) {
-            html += '<div style="background:rgba(16,185,129,0.08);border-radius:10px;padding:10px;border-right:3px solid #10b981;"><p style="font-size:13px;color:var(--text);margin:0;">🤖 ' + msg.reply + '</p></div>';
+            html += '<div style="background:rgba(16,185,129,0.08);border-radius:10px;padding:10px;border-right:3px solid #10b981;"><p style="font-size:13px;color:var(--text);margin:0;">🤖 ' + escapeHtml(msg.reply) + '</p></div>';
           }
           html += '</div>';
         });
 
         container.innerHTML = html;
       } catch (e) {
-        container.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+        container.innerHTML = '<div class="status error">❌ ' + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -2765,19 +2804,20 @@
         let html = '';
         data.forEach(song => {
           const isActive = song.is_active;
+          const safeSongId = escapeHtml(song.id);
           html += `
             <div class="post-item" style="display:flex; align-items:center; gap:15px;">
               <div style="width:50px;height:50px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                 <i class="fas fa-music" style="font-size:22px;color:white;"></i>
               </div>
               <div style="flex:1;min-width:0;">
-                <h3 style="font-size:16px;color:var(--text);margin-bottom:4px;">${song.title}</h3>
-                <p style="font-size:12px;color:var(--text-muted);direction:ltr;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${song.url}</p>
+                <h3 style="font-size:16px;color:var(--text);margin-bottom:4px;">${escapeHtml(song.title)}</h3>
+                <p style="font-size:12px;color:var(--text-muted);direction:ltr;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(song.url)}</p>
               </div>
               <div style="display:flex;gap:8px;align-items:center;">
                 <span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;${isActive ? 'background:rgba(16,185,129,0.2);color:#10b981;' : 'background:rgba(255,255,255,0.1);color:var(--text-muted);'}">${isActive ? '🔊 مفعّلة' : '🔇 متوقفة'}</span>
-                <button onclick="setActiveSong('${song.id}')" style="padding:6px 12px;border:none;border-radius:8px;font-family:inherit;font-size:12px;cursor:pointer;background:rgba(16,185,129,0.2);color:#10b981;font-weight:600;">تفعيل</button>
-                <button onclick="deleteSong('${song.id}')" style="padding:6px 12px;border:none;border-radius:8px;font-family:inherit;font-size:12px;cursor:pointer;background:rgba(239,68,68,0.2);color:#ef4444;font-weight:600;">حذف</button>
+                <button onclick="setActiveSong('${safeSongId}')" style="padding:6px 12px;border:none;border-radius:8px;font-family:inherit;font-size:12px;cursor:pointer;background:rgba(16,185,129,0.2);color:#10b981;font-weight:600;">تفعيل</button>
+                <button onclick="deleteSong('${safeSongId}')" style="padding:6px 12px;border:none;border-radius:8px;font-family:inherit;font-size:12px;cursor:pointer;background:rgba(239,68,68,0.2);color:#ef4444;font-weight:600;">حذف</button>
               </div>
             </div>
           `;
@@ -2786,7 +2826,7 @@
         container.innerHTML = html;
 
       } catch (e) {
-        container.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+        container.innerHTML = '<div class="status error">❌ ' + escapeHtml(e.message) + '</div>';
       }
     }
 
@@ -2846,7 +2886,7 @@
         initMusic(); // Refresh the player
 
       } catch (e) {
-        statusEl.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+        statusEl.innerHTML = '<div class="status error">❌ ' + escapeHtml(e.message) + '</div>';
       }
     }
 
