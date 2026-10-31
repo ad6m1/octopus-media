@@ -1394,6 +1394,9 @@
         <span class="profile-badge ${currentUser.role}">${currentUser.role === 'admin' ? 'مدير' : 'مشترك'}</span>
       `;
 
+      // Load AI settings
+      loadAiSettings();
+
       // Show admin nav
       if (currentUser.role === 'admin') {
         document.getElementById('navAdmin').style.display = '';
