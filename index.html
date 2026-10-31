@@ -776,12 +776,25 @@
 
     /* === RESPONSIVE === */
     @media (max-width: 600px) {
-      .card, .app-card { padding: 30px 20px; }
-      .ai-logo h1, .app-header h1 { font-size: 22px; }
-      .nav { grid-template-columns: 1fr 1fr; }
-      .profile-header { flex-direction: column; text-align: center; }
+      .container { padding: 10px; }
+      .card, .app-card { padding: 24px 16px; border-radius: 20px; }
+      .ai-logo h1, .app-header h1 { font-size: 20px; }
+      .nav { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+      .nav .btn { padding: 12px 8px; font-size: 13px; border-radius: 12px; }
+      .profile-header { flex-direction: column; text-align: center; gap: 10px; }
+      .profile-avatar { width: 60px; height: 60px; font-size: 24px; }
+      .profile-info h3 { font-size: 18px; }
       .admin-table { font-size: 12px; }
       .admin-table th, .admin-table td { padding: 8px 10px; }
+      .btn { padding: 14px; font-size: 14px; border-radius: 14px; }
+      input, select, textarea { font-size: 14px !important; padding: 12px 14px !important; border-radius: 12px !important; }
+      .info-alert { font-size: 12px; padding: 10px 12px; border-radius: 12px; }
+    }
+
+    @media (max-width: 380px) {
+      .card, .app-card { padding: 20px 14px; }
+      .nav .btn { padding: 10px 6px; font-size: 12px; }
+      .app-header h1 { font-size: 18px; }
     }
   </style>
 </head>
@@ -870,8 +883,9 @@
           <button class="btn active" id="navPublish" onclick="goPage('publish')">
             <span><i class="fas fa-upload"></i> النشر</span>
           </button>
-          <button class="btn" id="navBot" onclick="goPage('bot')">
+          <button class="btn" id="navBot" disabled style="opacity:0.5;cursor:not-allowed;position:relative;">
             <span><i class="fas fa-robot"></i> الرد الآلي</span>
+            <span style="position:absolute;top:-8px;right:-8px;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:bold;">قريباً</span>
           </button>
           <button class="btn" id="navHistory" onclick="goPage('history')">
             <span><i class="fas fa-history"></i> السجل</span>
