@@ -1662,6 +1662,7 @@
       }
 
       // Upload function for single file
+      var lastUploadErrors = [];
       async function uploadSingleFile(file, index) {
         var fileType = file.type.startsWith('image/') ? 'image' : 'video';
         var fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
@@ -1671,66 +1672,96 @@
         var fileItem = document.getElementById('file-item-' + index);
 
         try {
-          if (progressFill) progressFill.style.width = '20%';
+          if (progressFill) progressFill.style.width = '10%';
 
-          // Upload to Supabase Storage
+          // Step 1: Upload to Supabase Storage
           var upResult = await sb.storage.from('videos').upload(uniqueName, file, { cacheControl: '3600', upsert: false });
-          if (upResult.error) throw new Error(upResult.error.message);
+          if (upResult.error) throw new Error('خطأ رفع الملف: ' + upResult.error.message);
 
           var urlData = sb.storage.from('videos').getPublicUrl(uniqueName);
           var fileUrl = urlData.data.publicUrl;
-          if (progressFill) progressFill.style.width = '50%';
+          if (progressFill) progressFill.style.width = '40%';
 
-          // Send to webhook
+          // Step 2: Send to n8n webhook
           var userWebhook = currentUser.webhook_url || '';
+          var webhookSent = false;
           if (userWebhook) {
             var payload = {
               file_url: fileUrl, file_name: file.name, file_size: fileSize,
               file_type: fileType, post_type: postType, caption: caption || '',
               user_email: currentUser.email, user_id: currentUser.id,
+              user_name: currentUser.name || '',
               scheduled: isScheduled, batch_index: index + 1, batch_total: totalFiles
             };
             if (isScheduled) {
               payload.schedule_time = new Date(scheduleTime).toISOString();
               payload.timezone = 'Asia/Baghdad';
             }
-            await fetch(userWebhook, {
-              method: "POST", headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload)
-            }).catch(function() {});
+            try {
+              // Try with CORS first
+              var webhookResp = await fetch(userWebhook, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+              });
+              webhookSent = true;
+              console.log('✅ Webhook sent successfully, status:', webhookResp.status);
+            } catch (corsErr) {
+              // CORS blocked - retry with no-cors mode
+              console.warn('⚠️ Webhook CORS blocked, retrying with no-cors...');
+              try {
+                await fetch(userWebhook, {
+                  method: "POST",
+                  mode: "no-cors",
+                  headers: { "Content-Type": "text/plain" },
+                  body: JSON.stringify(payload)
+                });
+                webhookSent = true;
+                console.log('✅ Webhook sent (no-cors mode)');
+              } catch (e2) {
+                console.error('❌ Webhook failed completely:', e2.message);
+                lastUploadErrors.push('⚠️ ' + escapeHtml(file.name) + ': فشل إرسال webhook - ' + escapeHtml(e2.message));
+              }
+            }
           }
-          if (progressFill) progressFill.style.width = '80%';
+          if (progressFill) progressFill.style.width = '70%';
 
-          // Save to database
+          // Step 3: Save to database
           if (isScheduled) {
-            await sb.from('scheduled_posts').insert([{
+            var dbRes = await sb.from('scheduled_posts').insert([{
               user_id: currentUser.id, user_email: currentUser.email,
               post_type: postType, caption: caption || '',
               file_url: fileUrl, file_type: fileType,
               schedule_time: new Date(scheduleTime).toISOString(),
               timezone: 'Asia/Baghdad', platforms: ['all'], status: 'pending',
-              metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName }
+              metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName, webhook_sent: webhookSent }
             }]);
+            if (dbRes.error) console.warn('DB insert warning:', dbRes.error.message);
           } else {
-            await sb.from('published_posts').insert([{
+            var dbRes = await sb.from('published_posts').insert([{
               user_id: currentUser.id, user_email: currentUser.email,
               post_type: postType, caption: caption || '',
               file_url: fileUrl, file_type: fileType,
               platform: 'all', status: 'published',
-              metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName }
+              metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName, webhook_sent: webhookSent }
             }]);
+            if (dbRes.error) console.warn('DB insert warning:', dbRes.error.message);
           }
 
           if (progressFill) progressFill.style.width = '100%';
           if (fileItem) fileItem.style.borderColor = 'rgba(16, 185, 129, 0.5)';
           return true;
         } catch (err) {
-          console.error('Error: ' + file.name, err);
+          console.error('❌ Error: ' + file.name, err);
+          lastUploadErrors.push('❌ ' + escapeHtml(file.name) + ': ' + escapeHtml(err.message));
           if (progressFill) { progressFill.style.width = '100%'; progressFill.style.background = '#ef4444'; }
           if (fileItem) fileItem.style.borderColor = 'rgba(239, 68, 68, 0.5)';
           return false;
         }
       }
+
+      // Reset error log
+      lastUploadErrors = [];
 
       // Upload in parallel batches of 5
       var BATCH_SIZE = 5;
@@ -1745,12 +1776,18 @@
       }
 
       // Final status
-      var resultHtml = '<div class="status success">';
-      resultHtml += '✅ اكتمل النشر!<br><br>';
+      var resultHtml = '<div class="status ' + (failCount > 0 ? 'error' : 'success') + '">';
+      resultHtml += (failCount > 0 ? '⚠️' : '✅') + ' اكتمل النشر!<br><br>';
       resultHtml += '<strong>📊 النتائج:</strong><br>';
       resultHtml += '✅ نجح: <strong>' + successCount + '</strong> ملف<br>';
       if (failCount > 0) resultHtml += '❌ فشل: <strong>' + failCount + '</strong> ملف<br>';
       resultHtml += '<br><small>المجموع: ' + totalFiles + ' ملف</small>';
+      if (lastUploadErrors.length > 0) {
+        resultHtml += '<br><br><div style="text-align:right; font-size:12px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:12px; margin-top:10px;">';
+        resultHtml += '<strong>📋 تفاصيل الأخطاء:</strong><br>';
+        lastUploadErrors.forEach(function(e) { resultHtml += e + '<br>'; });
+        resultHtml += '</div>';
+      }
       resultHtml += '</div>';
       statusEl.innerHTML = resultHtml;
 
