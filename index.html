@@ -2016,7 +2016,7 @@
       try {
         const { data } = await sb.from('settings').select('*').eq('key', 'ai_config').single();
         if (data && data.value) {
-          aiConfig = JSON.parse(data.value);
+          aiConfig = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
           // Populate admin fields if admin
           if (currentUser && currentUser.role === 'admin') {
             document.getElementById('aiProvider').value = aiConfig.provider || 'openai';
