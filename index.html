@@ -1686,38 +1686,41 @@
           var userWebhook = currentUser.webhook_url || '';
           var webhookSent = false;
           if (userWebhook) {
-            var payload = {
-              file_url: fileUrl, file_name: file.name, file_size: fileSize,
-              file_type: fileType, post_type: postType, caption: caption || '',
-              user_email: currentUser.email, user_id: currentUser.id,
-              user_name: currentUser.name || '',
-              scheduled: isScheduled, batch_index: index + 1, batch_total: totalFiles
-            };
+            var formData = new FormData();
+            formData.append('file', file, file.name);
+            formData.append('file_url', fileUrl);
+            formData.append('file_name', file.name);
+            formData.append('file_size', fileSize);
+            formData.append('file_type', fileType);
+            formData.append('post_type', postType);
+            formData.append('caption', caption || '');
+            formData.append('user_email', currentUser.email);
+            formData.append('user_id', currentUser.id);
+            formData.append('user_name', currentUser.name || '');
+            formData.append('scheduled', isScheduled ? 'true' : 'false');
+            formData.append('batch_index', (index + 1).toString());
+            formData.append('batch_total', totalFiles.toString());
             if (isScheduled) {
-              payload.schedule_time = new Date(scheduleTime).toISOString();
-              payload.timezone = 'Asia/Baghdad';
+              formData.append('schedule_time', new Date(scheduleTime).toISOString());
+              formData.append('timezone', 'Asia/Baghdad');
             }
             try {
-              // Try with CORS first
               var webhookResp = await fetch(userWebhook, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+                body: formData
               });
               webhookSent = true;
-              console.log('✅ Webhook sent successfully, status:', webhookResp.status);
+              console.log('✅ Webhook sent with file, status:', webhookResp.status);
             } catch (corsErr) {
-              // CORS blocked - retry with no-cors mode
               console.warn('⚠️ Webhook CORS blocked, retrying with no-cors...');
               try {
                 await fetch(userWebhook, {
                   method: "POST",
                   mode: "no-cors",
-                  headers: { "Content-Type": "text/plain" },
-                  body: JSON.stringify(payload)
+                  body: formData
                 });
                 webhookSent = true;
-                console.log('✅ Webhook sent (no-cors mode)');
+                console.log('✅ Webhook sent with file (no-cors mode)');
               } catch (e2) {
                 console.error('❌ Webhook failed completely:', e2.message);
                 lastUploadErrors.push('⚠️ ' + escapeHtml(file.name) + ': فشل إرسال webhook - ' + escapeHtml(e2.message));
