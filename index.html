@@ -1255,6 +1255,35 @@
         console.error('❌ Supabase init error:', e);
       }
       loadSavedLogin();
+
+      // Auto-cleanup: delete storage files older than 1 hour
+      async function cleanupOldStorageFiles() {
+        try {
+          if (!sb) return;
+          var listResult = await sb.storage.from('videos').list('', { limit: 500 });
+          if (listResult.error || !listResult.data) return;
+          var now = Date.now();
+          var oneHour = 60 * 60 * 1000;
+          var toDelete = [];
+          listResult.data.forEach(function(f) {
+            if (f.created_at) {
+              var fileAge = now - new Date(f.created_at).getTime();
+              if (fileAge > oneHour) {
+                toDelete.push(f.name);
+              }
+            }
+          });
+          if (toDelete.length > 0) {
+            await sb.storage.from('videos').remove(toDelete);
+            console.log('🧹 Cleaned ' + toDelete.length + ' old files from storage');
+          }
+        } catch (e) {
+          console.warn('Cleanup error:', e.message);
+        }
+      }
+      // Run cleanup on load and every hour
+      cleanupOldStorageFiles();
+      setInterval(cleanupOldStorageFiles, 60 * 60 * 1000);
     });
 
     // ========================================
@@ -1778,32 +1807,26 @@
         results.forEach(function(ok) { if (ok) successCount++; else failCount++; });
       }
 
-      // Final status
-      var resultHtml = '<div class="status ' + (failCount > 0 ? 'error' : 'success') + '">';
-      resultHtml += (failCount > 0 ? '⚠️' : '✅') + ' اكتمل النشر!<br><br>';
-      resultHtml += '<strong>📊 النتائج:</strong><br>';
-      resultHtml += '✅ نجح: <strong>' + successCount + '</strong> ملف<br>';
-      if (failCount > 0) resultHtml += '❌ فشل: <strong>' + failCount + '</strong> ملف<br>';
-      resultHtml += '<br><small>المجموع: ' + totalFiles + ' ملف</small>';
-      if (lastUploadErrors.length > 0) {
-        resultHtml += '<br><br><div style="text-align:right; font-size:12px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:12px; margin-top:10px;">';
-        resultHtml += '<strong>📋 تفاصيل الأخطاء:</strong><br>';
-        lastUploadErrors.forEach(function(e) { resultHtml += e + '<br>'; });
-        resultHtml += '</div>';
+      // Final status - compact notification
+      if (failCount > 0) {
+        statusEl.innerHTML = '<div class="status error" style="padding:10px; font-size:13px;">⚠️ نجح ' + successCount + ' | فشل ' + failCount + ' من ' + totalFiles + '</div>';
+      } else {
+        statusEl.innerHTML = '<div class="status success" style="padding:10px; font-size:13px;">✅ تم نشر ' + successCount + ' ملف بنجاح</div>';
       }
-      resultHtml += '</div>';
-      statusEl.innerHTML = resultHtml;
 
-      // Reset
-      selectedFiles = [];
-      document.getElementById('mediaInput').value = '';
-      document.getElementById('filesListPreview').innerHTML = '';
-      document.getElementById('postType').value = '';
-      document.getElementById('captionInput').value = '';
-      document.getElementById('scheduleToggle').checked = false;
-      document.getElementById('scheduleDateTime').value = '';
-      toggleCaption();
-      toggleSchedule();
+      // Auto-reset after 4 seconds
+      setTimeout(function() {
+        statusEl.innerHTML = '';
+        selectedFiles = [];
+        document.getElementById('mediaInput').value = '';
+        document.getElementById('filesListPreview').innerHTML = '';
+        document.getElementById('postType').value = '';
+        document.getElementById('captionInput').value = '';
+        document.getElementById('scheduleToggle').checked = false;
+        document.getElementById('scheduleDateTime').value = '';
+        toggleCaption();
+        toggleSchedule();
+      }, 4000);
     }
 
     // ========================================
