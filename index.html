@@ -930,6 +930,32 @@
           </div>
 
           <div class="form-group">
+            <label><i class="fas fa-share-alt"></i> المنصات</label>
+            <div id="platformPicker" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+              <label style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s;">
+                <input type="checkbox" name="platforms" value="instagram" checked style="accent-color:var(--primary);width:16px;height:16px;">
+                <i class="fab fa-instagram" style="color:#E1306C;font-size:18px;"></i>
+                <span style="font-size:13px;">انستقرام</span>
+              </label>
+              <label style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s;">
+                <input type="checkbox" name="platforms" value="youtube" checked style="accent-color:var(--primary);width:16px;height:16px;">
+                <i class="fab fa-youtube" style="color:#FF0000;font-size:18px;"></i>
+                <span style="font-size:13px;">يوتيوب</span>
+              </label>
+              <label style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s;">
+                <input type="checkbox" name="platforms" value="tiktok" checked style="accent-color:var(--primary);width:16px;height:16px;">
+                <i class="fab fa-tiktok" style="color:#fff;font-size:18px;"></i>
+                <span style="font-size:13px;">تيك توك</span>
+              </label>
+              <label style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s;">
+                <input type="checkbox" name="platforms" value="twitter" checked style="accent-color:var(--primary);width:16px;height:16px;">
+                <i class="fab fa-twitter" style="color:#1DA1F2;font-size:18px;"></i>
+                <span style="font-size:13px;">تويتر / X</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
             <div class="schedule-toggle">
               <input type="checkbox" id="scheduleToggle" onchange="toggleSchedule()">
               <label for="scheduleToggle"><i class="fas fa-clock"></i> جدولة النشر</label>
@@ -1659,8 +1685,18 @@
       var scheduleTime = document.getElementById('scheduleDateTime').value;
       var statusEl = document.getElementById('statusText');
 
+      var selectedPlatforms = [];
+      document.querySelectorAll('input[name="platforms"]:checked').forEach(function(cb) {
+        selectedPlatforms.push(cb.value);
+      });
+
       if (!selectedFiles.length || !postType) {
         alert('⚠️ اختر الملفات ونوع النشر');
+        return;
+      }
+
+      if (selectedPlatforms.length === 0) {
+        alert('⚠️ اختر منصة واحدة على الأقل');
         return;
       }
 
@@ -1726,6 +1762,7 @@
             formData.append('user_email', currentUser.email);
             formData.append('user_id', currentUser.id);
             formData.append('user_name', currentUser.name || '');
+            formData.append('platforms', selectedPlatforms.join(','));
             formData.append('scheduled', isScheduled ? 'true' : 'false');
             formData.append('batch_index', (index + 1).toString());
             formData.append('batch_total', totalFiles.toString());
@@ -1765,7 +1802,7 @@
               post_type: postType, caption: caption || '',
               file_url: fileUrl, file_type: fileType,
               schedule_time: new Date(scheduleTime).toISOString(),
-              timezone: 'Asia/Baghdad', platforms: ['all'], status: 'pending',
+              timezone: 'Asia/Baghdad', platforms: selectedPlatforms, status: 'pending',
               metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName, webhook_sent: webhookSent }
             }]);
             if (dbRes.error) console.warn('DB insert warning:', dbRes.error.message);
@@ -1774,7 +1811,7 @@
               user_id: currentUser.id, user_email: currentUser.email,
               post_type: postType, caption: caption || '',
               file_url: fileUrl, file_type: fileType,
-              platform: 'all', status: 'published',
+              platform: selectedPlatforms.join(','), status: 'published',
               metadata: { file_name: file.name, file_size: fileSize, storage_path: uniqueName, webhook_sent: webhookSent }
             }]);
             if (dbRes.error) console.warn('DB insert warning:', dbRes.error.message);
@@ -1822,6 +1859,7 @@
         document.getElementById('filesListPreview').innerHTML = '';
         document.getElementById('postType').value = '';
         document.getElementById('captionInput').value = '';
+        document.querySelectorAll('input[name="platforms"]').forEach(function(cb) { cb.checked = true; });
         document.getElementById('scheduleToggle').checked = false;
         document.getElementById('scheduleDateTime').value = '';
         toggleCaption();
@@ -1930,6 +1968,13 @@
                 <div class="post-meta">
                   <span><i class="fas fa-clock"></i> ${time}</span>
                   ${meta.file_size ? `<span><i class="fas fa-hdd"></i> ${escapeHtml(meta.file_size)}</span>` : ''}
+                  ${(function() {
+                    var plats = post.platforms || (post.platform ? post.platform.split(',') : ['all']);
+                    if (typeof plats === 'string') plats = plats.split(',');
+                    var icons = { instagram: '<i class="fab fa-instagram" style="color:#E1306C"></i>', youtube: '<i class="fab fa-youtube" style="color:#FF0000"></i>', tiktok: '<i class="fab fa-tiktok"></i>', twitter: '<i class="fab fa-twitter" style="color:#1DA1F2"></i>' };
+                    if (plats.includes('all')) return '<span style="display:flex;gap:4px;align-items:center;">' + Object.values(icons).join('') + '</span>';
+                    return '<span style="display:flex;gap:4px;align-items:center;">' + plats.map(function(p) { return icons[p.trim()] || ''; }).join('') + '</span>';
+                  })()}
                 </div>
               </div>
               ${tab === 'scheduled' ? `
